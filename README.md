@@ -28,7 +28,7 @@
     * **Google Gemini API Key**: Enter your API key to enable AI features (Click the label to get one for free).
     * **Server Framework**: Select your server's core (RSG or VORP).
     * **Global Defaults**: Set your server's standard economy multipliers (e.g., NPC Sell = 2.0x Base Cost).
-    * **Image Path**: Set the base URL or local path for item icons (e.g., `F:\yourserver\resources\[framework]\rsg-inventory\html\images`).
+    * **Image Path**: Set the base URL or local path for item icons (e.g., `F:\yourserver\resources\[framework]\rsg-inventory\html\images\`).
 
 ## 📖 Usage Guide
 
