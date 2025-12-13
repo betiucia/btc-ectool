@@ -5,8 +5,10 @@ const STORAGE_KEY = 'btc_ectool';
 let currentLang = 'en'; // Default to English
 let globalConfig = { sellMult: 2.0, buyMult: 0.5, p2pMargin: 30, imagePath: "", framework: 'rsg' };
 let categories = [
+
 ];
 let craftingTables = [
+
 ];
 let items = [
 ];
@@ -95,6 +97,35 @@ function renderItemSearchDropdown(selectedId, className) {
     </div>`;
 }
 
+// NOVA FUNÇÃO: Renderiza o Dropdown de Categorias (Searchable)
+function renderCategorySearchDropdown(selectedId) {
+    let selectedName = "";
+    let itemsHtml = "";
+    
+    // Sort categories alphabetically for better UX with safety check
+    const sortedCats = [...categories].sort((a,b) => {
+        const nameA = a.name || "";
+        const nameB = b.name || "";
+        return nameA.localeCompare(nameB);
+    });
+
+    sortedCats.forEach(c => {
+        if(c.id === selectedId) selectedName = c.name;
+        // Reutilizamos selectItem pois a estrutura é compatível
+        itemsHtml += `<div class="ds-item" onclick="selectItem(this, '${c.id}', '${(c.name || "").replace(/'/g, "\\'")}')">${c.name} <small>${c.id}</small></div>`;
+    });
+
+    // Mantemos o ID 'modal_itemCategory' no input hidden para compatibilidade
+    return `
+    <div class="dropdown-search">
+        <input type="text" class="ds-display" id="cat_display_input" placeholder="${t('opt_select')}" value="${selectedName}" onfocus="toggleDropdown(this, true)" oninput="filterDropdown(this)">
+        <input type="hidden" class="ds-value" id="modal_itemCategory" value="${selectedId}" onchange="previewPrices()"> 
+        <div class="ds-list" style="z-index: 1100;"> 
+            ${itemsHtml}
+        </div>
+    </div>`;
+}
+
 function toggleDropdown(input, show) {
     const list = input.nextElementSibling.nextElementSibling;
     if (show) {
@@ -156,10 +187,12 @@ function addRecipeCard(data = null) {
     const rName = data ? data.name : t('variant_new');
     const rTime = data ? data.time : 5;
     const rLevel = data ? data.level : 0;
+    const rAmount = data ? (data.amount || 1) : 1; // Default amount is 1
     const rQueue = data ? data.queue : false;
     const rTables = data ? data.tables : [];
 
-    card.innerHTML = `<div class="recipe-header"><input type="text" class="r-name" value="${rName}" placeholder="${t('lbl_recipe_name')}" style="width:50%; font-weight:bold; background:transparent; border:none; color:var(--cor-destaque);"><div style="display:flex; gap:10px; align-items:center;"><span class="recipe-cost-badge">${t('lbl_cost')} <span class="r-calc-cost">$ 0.00</span></span><button type="button" class="btn btn-small" style="background:var(--cor-erro-borda); width:auto; border-color:var(--cor-erro); color:#fff;" onclick="this.parentElement.parentElement.parentElement.remove(); previewPrices();">X</button></div></div><div style="margin-bottom:10px;"><label style="color:var(--cor-texto-secundario); font-size:0.8em;">${t('lbl_tables')}</label>${getTablesCheckboxesHTML(rTables)}</div><div class="craft-variants"><div class="form-group"><label>${t('lbl_time')}</label><input type="number" class="r-time" value="${rTime}" min="0"></div><div class="form-group"><label>${t('lbl_level')}</label><input type="number" class="r-level" value="${rLevel}" min="0"></div><div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:10px;"><label style="cursor:pointer; font-size:0.9em; color:var(--cor-texto-principal);"><input type="checkbox" class="r-queue" ${rQueue ? 'checked' : ''} style="width:auto; margin-right:5px;">${t('lbl_queue')}</label></div></div><div style="margin-bottom:5px; font-size:0.8em; text-transform:uppercase; color:var(--cor-texto-secundario); display:flex; gap:10px;"><span style="flex:2">${t('lbl_ing_header')}</span><span style="flex:0.8">${t('lbl_qty')}</span><span style="flex:0.1"></span><span style="flex:2">${t('lbl_return')}</span><span style="flex:0.8">${t('lbl_qty')}</span><span style="width:30px"></span></div><div class="r-ingredients-list"></div><button type="button" class="btn btn-secondary btn-small" onclick="addIngToCard(this)">+ ${t('lbl_ing_header')}</button><div style="margin-top:10px; border-top:1px solid var(--cor-borda-fraca); padding-top:5px;"><div style="margin-bottom:5px; font-size:0.8em; text-transform:uppercase; color:var(--cor-texto-secundario);">${t('lbl_tools_header')}</div><div class="list-header"><span style="flex:2">${t('lbl_tool_col')}</span><span style="flex:0.5">${t('lbl_qty')}</span><span style="flex:1">${t('lbl_deg_col')}</span><span style="width:30px"></span></div><div class="r-tools-list"></div><button type="button" class="btn btn-tool btn-small" onclick="addToolToCard(this)">+ ${t('col_item')}</button></div>`;
+    // Added r-amount input with onchange="previewPrices()" to recalculate cost per unit
+    card.innerHTML = `<div class="recipe-header"><input type="text" class="r-name" value="${rName}" placeholder="${t('lbl_recipe_name')}" style="width:50%; font-weight:bold; background:transparent; border:none; color:var(--cor-destaque);"><div style="display:flex; gap:10px; align-items:center;"><span class="recipe-cost-badge">${t('lbl_cost')} <span class="r-calc-cost">$ 0.00</span></span><button type="button" class="btn btn-small" style="background:var(--cor-erro-borda); width:auto; border-color:var(--cor-erro); color:#fff;" onclick="this.parentElement.parentElement.parentElement.remove(); previewPrices();">X</button></div></div><div style="margin-bottom:10px;"><label style="color:var(--cor-texto-secundario); font-size:0.8em;">${t('lbl_tables')}</label>${getTablesCheckboxesHTML(rTables)}</div><div class="craft-variants"><div class="form-group"><label>${t('lbl_time')}</label><input type="number" class="r-time" value="${rTime}" min="0"></div><div class="form-group"><label>${t('lbl_amount_craft')}</label><input type="number" class="r-amount" value="${rAmount}" min="1" onchange="previewPrices()"></div><div class="form-group"><label>${t('lbl_level')}</label><input type="number" class="r-level" value="${rLevel}" min="0"></div><div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:10px;"><label style="cursor:pointer; font-size:0.9em; color:var(--cor-texto-principal);"><input type="checkbox" class="r-queue" ${rQueue ? 'checked' : ''} style="width:auto; margin-right:5px;">${t('lbl_queue')}</label></div></div><div style="margin-bottom:5px; font-size:0.8em; text-transform:uppercase; color:var(--cor-texto-secundario); display:flex; gap:10px;"><span style="flex:2">${t('lbl_ing_header')}</span><span style="flex:0.8">${t('lbl_qty')}</span><span style="flex:0.1"></span><span style="flex:2">${t('lbl_return')}</span><span style="flex:0.8">${t('lbl_qty')}</span><span style="width:30px"></span></div><div class="r-ingredients-list"></div><button type="button" class="btn btn-secondary btn-small" onclick="addIngToCard(this)">+ ${t('lbl_ing_header')}</button><div style="margin-top:10px; border-top:1px solid var(--cor-borda-fraca); padding-top:5px;"><div style="margin-bottom:5px; font-size:0.8em; text-transform:uppercase; color:var(--cor-texto-secundario);">${t('lbl_tools_header')}</div><div class="list-header"><span style="flex:2">${t('lbl_tool_col')}</span><span style="flex:0.5">${t('lbl_qty')}</span><span style="flex:1">${t('lbl_deg_col')}</span><span style="width:30px"></span></div><div class="r-tools-list"></div><button type="button" class="btn btn-tool btn-small" onclick="addToolToCard(this)">+ ${t('col_item')}</button></div>`;
     container.appendChild(card);
     const ingListContainer = card.querySelector('.r-ingredients-list');
     if(data && data.ingredients) { data.ingredients.forEach(ing => addIngRowHTML(ingListContainer, ing.id, ing.qty, ing.returnId, ing.returnQty)); } 
@@ -198,6 +231,9 @@ function getBaseCost(item, visited=[]) {
     let minRecipeCost = Infinity;
     item.recipes.forEach(recipe => {
         let cost = getRecipeCost(recipe, visited); 
+        // Cost per unit produced (recipe cost / amount produced)
+        const amount = recipe.amount || 1;
+        cost = cost / amount; 
         if(cost < minRecipeCost) minRecipeCost = cost;
     });
     return minRecipeCost === Infinity ? 0 : minRecipeCost;
@@ -221,6 +257,9 @@ function previewPrices() {
         let minCost = Infinity;
         recipeCards.forEach(card => {
             let cardCost = 0;
+            // Get the amount produced by this recipe
+            const rAmount = parseFloat(card.querySelector('.r-amount').value) || 1;
+
             card.querySelectorAll('.ingredient-row').forEach(row => {
                 const hiddenInput = row.querySelector('.ing-id');
                 const id = hiddenInput ? hiddenInput.value : '';
@@ -229,21 +268,28 @@ function previewPrices() {
                 if(ing) cardCost += getBaseCost(ing) * qty;
             });
             card.querySelectorAll('.tool-row').forEach(row => {
-                const hiddenInput = r.querySelector('.tool-id');
+                const hiddenInput = row.querySelector('.tool-id'); 
                 const id = hiddenInput ? hiddenInput.value : '';
                 const tQty = parseFloat(row.querySelector('.tool-qty').value) || 1;
                 const deg = parseFloat(row.querySelector('.tool-deg').value) || 0;
                 const tool = items.find(i => i.id === id);
                 if(tool) cardCost += (getBaseCost(tool) * tQty) * (deg / 100);
             });
+            // Show cost per CRAFT action on the card (Total cost for the batch)
             card.querySelector('.r-calc-cost').innerText = `$ ${cardCost.toFixed(2)}`;
-            if(cardCost < minCost) minCost = cardCost;
+            
+            // Calculate cost per UNIT (Total Cost / Amount Produced)
+            const costPerUnit = cardCost / rAmount;
+
+            if(costPerUnit < minCost) minCost = costPerUnit;
         });
         finalCost = (minCost === Infinity) ? 0 : minCost;
     } else {
         finalCost = parseFloat(document.getElementById('modal_costPrice').value) || 0;
     }
-    const tempItem = { id: 'temp', cat: document.getElementById('modal_itemCategory').value, isCrafted: false, cost: finalCost };
+    // Handle hidden input ID which now stores category
+    const catVal = document.getElementById('modal_itemCategory') ? document.getElementById('modal_itemCategory').value : '';
+    const tempItem = { id: 'temp', cat: catVal, isCrafted: false, cost: finalCost };
     const prices = calculatePrices(tempItem);
     document.getElementById('modal_prevBase').innerText = `$ ${prices.base.toFixed(2)}`;
     document.getElementById('modal_prevSell').innerText = `$ ${prices.npcSell.toFixed(2)}`;
@@ -317,7 +363,10 @@ function renderTable() {
             const sortedRecipes = item.recipes.map(r => ({ ...r, calcCost: getRecipeCost(r) })).sort((a,b) => a.calcCost - b.calcCost);
             let baseList='<div class="col-variant-list">', sellList='<div class="col-variant-list col-sell">', buyList='<div class="col-variant-list col-buy">', p2pList='<div class="col-variant-list col-p2p">';
             sortedRecipes.forEach(r => {
-                const rPrices = calculatePricesFromCost(r.calcCost, item);
+                // Cost per unit correction
+                const rAmount = r.amount || 1;
+                const costPerUnit = r.calcCost / rAmount;
+                const rPrices = calculatePricesFromCost(costPerUnit, item);
                 const rName = r.name.length > 10 ? r.name.substring(0,8)+'..' : r.name;
                 baseList += `<div class="col-variant-item"><span class="col-variant-name">${rName}:</span> <span>$ ${rPrices.base.toFixed(2)}</span></div>`;
                 sellList += `<div class="col-variant-item"><span class="col-variant-name">${rName}:</span> <span>$ ${rPrices.npcSell.toFixed(2)}</span></div>`;
@@ -359,7 +408,7 @@ function updateCategoryData(index, field, value) {
         value = (value === "") ? null : parseFloat(value);
     }
     categories[index][field] = value;
-    if(field === 'name') populateCategorySelects();
+    // Removido populateCategorySelects daqui pois o modal agora renderiza dinamicamente ao abrir
     saveLocalData();
     renderTable(); // Re-calculate prices as category multipliers might have changed
 }
@@ -417,9 +466,11 @@ function addCategory() {
 }
 
 function populateCategorySelects() {
+    // Legacy support for non-modal inputs if needed, can be empty or removed if no selects exist
     const selects = document.querySelectorAll('.category-select');
     selects.forEach(sel => { const old=sel.value; sel.innerHTML='<option value="" disabled selected>Selecione...</option>'; categories.forEach(c=>{sel.innerHTML+=`<option value="${c.id}">${c.name}</option>`}); if(old) sel.value=old; });
 }
+
 function updateCalculations() {
     apiKey = document.getElementById('configApiKey').value;
     localStorage.setItem('redm_economy_apikey', apiKey); 
@@ -582,7 +633,7 @@ async function generateAIRecipe() {
             const cleanJson = result.replace(/```json|```/g, '').trim();
             const data = JSON.parse(cleanJson);
             const recipeData = {
-                name: "Receita IA", time: data.time || 10, level: data.level || 0, queue: true,
+                name: "Receita IA", time: data.time || 10, level: data.level || 0, amount: 1, queue: true,
                 tables: [], ingredients: data.ingredients || [], tools: data.tools || []
             };
             addRecipeCard(recipeData); showToast(t('toast_recipe_added'));
@@ -612,10 +663,20 @@ async function generateAICategory(btn) {
     if (result) {
         const suggestedId = result.trim().replace(/['"`]/g, ''); // Clean potential quotes
         // Check if valid
-        if (categories.some(c => c.id === suggestedId)) {
-            document.getElementById('modal_itemCategory').value = suggestedId;
-            previewPrices(); // Update calc if needed
-            showToast(`Categoria sugerida: ${suggestedId}`);
+        const catObj = categories.find(c => c.id === suggestedId);
+        if (catObj) {
+            // ATUALIZAÇÃO: Setar valores nos inputs do novo dropdown COM VERIFICAÇÃO
+            const hiddenInput = document.getElementById('modal_itemCategory');
+            const displayInput = document.getElementById('cat_display_input');
+            
+            if (hiddenInput && displayInput) {
+                hiddenInput.value = suggestedId;
+                displayInput.value = catObj.name;
+                previewPrices(); // Update calc if needed
+                showToast(`Categoria sugerida: ${catObj.name}`);
+            } else {
+                 console.error("Inputs de categoria não encontrados no DOM.");
+            }
         } else {
             showToast("IA sugeriu categoria inválida: " + suggestedId);
         }
@@ -916,9 +977,11 @@ function copyAllCraftsDefinitions() {
                 });
             }
 
+            const rAmount = recipe.amount || 1;
+
             fullLua += `    ['${keyName}'] = { -- ${item.name} (${rName})
     craftItem = "${item.id}",
-    amount = 1,
+    amount = ${rAmount},
     time = ${recipe.time || 0},
     description = "${description}",
     category = "${categoryName}",
@@ -1120,6 +1183,7 @@ function exportLua() {
         const rTime = parseInt(card.querySelector('.r-time').value) || 0;
         const rLevel = parseInt(card.querySelector('.r-level').value) || 0;
         const rQueue = card.querySelector('.r-queue').checked;
+        const rAmount = parseFloat(card.querySelector('.r-amount').value) || 1;
         
         let keyName = itemId;
         if (recipeCards.length > 1) {
@@ -1129,7 +1193,6 @@ function exportLua() {
 
         let ingStr = "";
         card.querySelectorAll('.ingredient-row').forEach(r => {
-            // Updated to get value from hidden input since selectors changed
             const hiddenInput = r.querySelector('.ing-id');
             const id = hiddenInput ? hiddenInput.value : '';
             const qty = r.querySelector('.ing-qty').value;
@@ -1159,7 +1222,7 @@ function exportLua() {
 
         luaOutput += `    ['${keyName}'] = { -- ${itemName} (${rName})
     craftItem = "${itemId}",
-    amount = 1,
+    amount = ${rAmount},
     time = ${rTime},
     description = "${description}",
     category = "${categoryName}",
@@ -1188,6 +1251,9 @@ function openModal(mode, index = -1) {
     document.getElementById('recipesContainer').innerHTML = '';
     document.getElementById('edit_index').value = index;
     
+    // Configurar valores iniciais
+    let initialCatId = "";
+
     if (mode === 'create') {
         document.getElementById('modalTitle').innerText = t('modal_manage_title'); 
         document.getElementById('modal_itemId').disabled = false;
@@ -1199,7 +1265,10 @@ function openModal(mode, index = -1) {
         document.getElementById('modal_itemId').value = item.id;
         document.getElementById('modal_itemId').disabled = true;
         document.getElementById('modal_itemName').value = item.name;
-        document.getElementById('modal_itemCategory').value = item.cat;
+        
+        // Salvar ID da categoria para renderizar o dropdown depois
+        initialCatId = item.cat;
+        
         document.getElementById('modal_description').value = item.description || "";
         document.getElementById('modal_imageOverride').value = item.imageOverride || "";
         document.getElementById('modal_isCrafted').checked = item.isCrafted;
@@ -1222,6 +1291,12 @@ function openModal(mode, index = -1) {
         }
     }
     
+    // ATUALIZAÇÃO AQUI: Renderizar o dropdown de categorias no lugar do select
+    const dropdownContainer = document.getElementById('categoryDropdownContainer');
+    if (dropdownContainer) {
+        dropdownContainer.innerHTML = renderCategorySearchDropdown(initialCatId);
+    }
+
     renderFrameworkFields();
     previewPrices();
     modal.style.display = "block";
@@ -1317,7 +1392,10 @@ document.getElementById('itemForm').addEventListener('submit', (e) => {
                 });
             });
             recipes.push({
-                name: card.querySelector('.r-name').value || "Variante", time: parseInt(card.querySelector('.r-time').value) || 0, level: parseInt(card.querySelector('.r-level').value) || 0,
+                name: card.querySelector('.r-name').value || "Variante", 
+                time: parseInt(card.querySelector('.r-time').value) || 0, 
+                level: parseInt(card.querySelector('.r-level').value) || 0,
+                amount: parseFloat(card.querySelector('.r-amount').value) || 1,
                 queue: card.querySelector('.r-queue').checked, tables: tables, ingredients: ingredients, tools: tools
             });
         });
@@ -1325,8 +1403,11 @@ document.getElementById('itemForm').addEventListener('submit', (e) => {
     
     const frameworkData = getFrameworkDataFromInputs();
 
+    // ATUALIZAÇÃO: Pegar valor do input hidden 'modal_itemCategory' (mesmo ID, agora hidden)
+    const catId = document.getElementById('modal_itemCategory').value;
+
     const itemData = {
-        id: itemId, name: document.getElementById('modal_itemName').value, cat: document.getElementById('modal_itemCategory').value,
+        id: itemId, name: document.getElementById('modal_itemName').value, cat: catId,
         description: document.getElementById('modal_description').value, imageOverride: document.getElementById('modal_imageOverride').value,
         isCrafted: isCrafted, cost: parseFloat(document.getElementById('modal_costPrice').value) || 0, recipes: recipes,
         frameworkData: frameworkData 
@@ -1347,7 +1428,7 @@ window.onload = function() {
     
     renderCategories();
     renderCraftingTables();
-    populateCategorySelects();
+    // populateCategorySelects(); // Não é mais necessário no onload para o modal principal
     renderTable();
     
     setLanguage(currentLang); 
