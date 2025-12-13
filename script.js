@@ -5,26 +5,10 @@ const STORAGE_KEY = 'btc_ectool';
 let currentLang = 'en'; // Default to English
 let globalConfig = { sellMult: 2.0, buyMult: 0.5, p2pMargin: 30, imagePath: "", framework: 'rsg' };
 let categories = [
-    { id: 'raw', name: 'Raw Material', sellMult: 0, buyMult: 0.3, p2pMargin: 10 },
-    { id: 'tool', name: 'Tools', sellMult: 1.5, buyMult: 0.5, p2pMargin: 20 },
-    { id: 'consumable', name: 'Consumables', sellMult: 1.5, buyMult: 0.5, p2pMargin: 20 }
 ];
 let craftingTables = [
-    { id: 'workbench', name: 'Workbench' },
-    { id: 'campfire', name: 'Campfire' },
-    { id: 'anvil', name: 'Anvil' }
 ];
 let items = [
-    { id: 'iron', name: 'Iron', cat: 'raw', isCrafted: false, recipes:[], cost: 0.50, description: "Raw metal.", image: "iron_ore", frameworkData: {} },
-    { id: 'hammer', name: 'Hammer', cat: 'tool', isCrafted: false, recipes:[], cost: 5.00, description: "Basic tool.", frameworkData: {} },
-    { 
-        id: 'bucket', name: 'Bucket', cat: 'tool', isCrafted: true, cost: 0, description: "Metal bucket.", frameworkData: {},
-        recipes: [
-            { name: "Workbench", tables: ['workbench'], time: 5, level: 0, queue: false, ingredients: [{id:'iron', qty:2}], tools: [{id:'hammer', qty:1, deg:10}] },
-            { name: "Anvil", tables: ['anvil'], time: 2, level: 2, queue: false, ingredients: [{id:'iron', qty:1}], tools: [{id:'hammer', qty:1, deg:5}] }
-        ]
-    },
-    { id: 'milk', name: 'Milk', cat: 'consumable', isCrafted: false, cost: 3.00, description: "Fresh milk.", frameworkData: {} }
 ];
 let currentSort = { column: 'name', direction: 'asc' };
 
