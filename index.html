@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC-ECTool</title>
+    
+    <!-- Importando Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Graduate&family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- CSS Externo -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast">Dados copiados!</div>
+
+    <!-- TABS -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="openTab('items', this)" data-lang="registered_items">Itens Cadastrados</button>
+        <button class="tab-btn" onclick="openTab('config', this)" data-lang="config_short">Configurações</button>
+    </div>
+
+    <!-- TAB 1: ITENS -->
+    <div id="view-items" class="tab-content active">
+        <div class="container">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 data-lang="registered_items">Itens Cadastrados</h2>
+                    <div class="search-bar">
+                        <input type="text" id="searchInput" placeholder="Buscar..." onkeyup="renderTable()">
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                         <button class="btn-plus" onclick="openModal('create')" data-lang-title="tooltip_create_item">+</button>
+                         <button class="btn-import-icon" onclick="openImportModal()" data-lang-title="tooltip_import_items">📥</button>
+                         <button class="btn-import-icon" onclick="exportAllItemsDefinitions()" data-lang-title="tooltip_export_all_items" style="background-color: #2e7d32; border-color: #1b5e20;">📤</button>
+                         <button class="btn-import-icon tooltip-right" onclick="copyAllCraftsDefinitions()" data-lang-title="tooltip_copy_all" style="background-color: #e65100; border-color: #e65100;">📜</button>
+                         <!-- NOVO: Botão Global Auto Cat -->
+                         <button class="btn-import-icon tooltip-right" onclick="generateAutoCategoryGlobal(this)" data-lang-title="tooltip_auto_cat_global" style="background-color: #7b1fa2; border-color: #4a148c;">✨</button>
+                    </div>
+                </div>
+                
+                <table id="economyTable">
+                    <thead>
+                        <tr>
+                            <th onclick="handleSort('name')" width="25%"><span data-lang="col_item">Item</span> <span id="sort-name" class="sort-icon">⇅</span></th>
+                            <th onclick="handleSort('cat')"><span data-lang="col_cat">Categ.</span> <span id="sort-cat" class="sort-icon">⇅</span></th>
+                            <th onclick="handleSort('base')"><span data-lang="col_base">Custo Base</span><br><small data-lang="col_best">(Melhor)</small> <span id="sort-base" class="sort-icon">⇅</span></th>
+                            <th onclick="handleSort('sell')"><span data-lang="col_sell">NPC Vende</span><br><small data-lang="col_shop">(Loja)</small> <span id="sort-sell" class="sort-icon">⇅</span></th>
+                            <th onclick="handleSort('buy')"><span data-lang="col_buy">NPC Paga</span><br><small data-lang="col_sink">(Sink)</small> <span id="sort-buy" class="sort-icon">⇅</span></th>
+                            <th onclick="handleSort('p2p')"><span data-lang="col_p2p">P2P</span><br><small data-lang="col_player">(Player)</small> <span id="sort-p2p" class="sort-icon">⇅</span></th>
+                            <th width="120px" data-lang="col_actions">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: CONFIGURAÇÕES -->
+    <div id="view-config" class="tab-content">
+        <div class="container">
+            <div class="panel">
+                <div class="panel-header">
+                    <h1 data-lang="config_title_simple">Configurações</h1>
+                </div>
+                
+                <div class="config-grid">
+                    
+                    <!-- DATA / BACKUP -->
+                    <div class="config-card" style="border-left-color: var(--cor-info);">
+                        <h3 data-lang="data_backup">Gerenciamento de Dados</h3>
+                        <div style="display:flex; gap:10px; margin-bottom:5px;">
+                            <button class="btn btn-secondary" onclick="downloadJSON()" style="flex:1;" data-lang="btn_download_json">💾 Baixar Backup (JSON)</button>
+                            <label class="btn btn-secondary" style="flex:1; text-align:center; cursor:pointer; margin-top:5px; border-color: var(--cor-info); color: var(--cor-info);" data-lang="btn_upload_json">
+                                📂 Restaurar Backup
+                                <input type="file" id="uploadJsonInput" accept=".json" style="display:none;" onchange="uploadJSON(this)">
+                            </label>
+                        </div>
+                        <!-- Clear Button -->
+                        <div style="margin-top: 10px; display:flex;">
+                            <button class="btn btn-secondary" onclick="clearAllItems()" style="flex:1; border-color: var(--cor-erro); color: var(--cor-erro);" data-lang="btn_clear_all">🗑️ Limpar Todos os Itens</button>
+                        </div>
+                        
+                        <small style="color:var(--cor-texto-secundario); display:block; margin-top:10px;" data-lang="backup_hint">Os dados são salvos automaticamente no navegador. Use o Backup para segurança ou para transferir.</small>
+                    </div>
+
+                    <div class="config-card" style="border-left-color: var(--cor-destaque);">
+                        <h3 data-lang="global_defaults">Padrões Globais</h3>
+                        <div class="global-defaults" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <div class="form-group" style="flex:1; min-width: 150px;">
+                                <label data-lang="lbl_framework">Framework do Servidor</label>
+                                <select id="globalFramework" onchange="updateCalculations()">
+                                    <option value="rsg">RSG</option>
+                                    <option value="vorp">VORP Core</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="width: 100%;">
+                                 <!-- ATUALIZAÇÃO AQUI: Label Interativa -->
+                                 <label data-lang="api_key_label" data-lang-title="tooltip_api_key" onclick="window.open('https://aistudio.google.com/app/apikey', '_blank')" style="cursor: pointer; text-decoration: underline dotted; color: var(--cor-info);">Google Gemini API Key ℹ️</label>
+                                 <input type="password" id="configApiKey" placeholder="AI Studio Key..." onchange="updateCalculations()">
+                            </div>
+                            
+                            <div class="form-group" style="flex:1; min-width: 150px;">
+                                <label data-lang="mult_npc_sell" data-lang-title="tip_npc_sell">Mult. NPC Vende (Loja)</label>
+                                <input type="number" id="globalSellMult" value="2.0" step="0.1" onchange="updateCalculations()">
+                            </div>
+                            <div class="form-group" style="flex:1; min-width: 150px;">
+                                <label data-lang="mult_npc_buy" data-lang-title="tip_npc_buy">Mult. NPC Compra (Sink)</label>
+                                <input type="number" id="globalBuyMult" value="0.5" step="0.1" onchange="updateCalculations()">
+                            </div>
+                            <div class="form-group" style="flex:1; min-width: 150px;">
+                                <label data-lang="margin_p2p" data-lang-title="tip_p2p">Margem P2P (%)</label>
+                                <input type="number" id="globalP2PMargin" value="30" step="5" onchange="updateCalculations()">
+                            </div>
+                            
+                            <div class="form-group" style="width: 100%;">
+                                <label data-lang="img_path" data-lang-title="tip_img_path">Caminho da Pasta de Imagens</label>
+                                <input type="text" id="globalImagePath" value="" placeholder="ex: img/items/" onchange="updateCalculations()">
+                            </div>
+                            
+                            <div class="form-group" style="width: 100%; border-top: 1px dashed var(--cor-borda-fraca); padding-top: 10px;">
+                                <label data-lang="lbl_language">Idioma / Language</label>
+                                <select id="langSelect" onchange="setLanguage(this.value)">
+                                    <option value="en" selected>🇺🇸 English</option>
+                                    <option value="pt">🇧🇷 Português (Brasil)</option>
+                                    <option value="de">🇩🇪 Deutsch</option>
+                                    <option value="ru">🇷🇺 Русский</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-card">
+                        <h3 data-lang="categories">Categorias</h3>
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 110px 50px; gap: 5px; font-size: 0.8em; margin-bottom: 5px; color: var(--cor-texto-secundario);">
+                            <span data-lang="name">Nome</span>
+                            <span data-lang="mult_sell_short" data-lang-title="tip_mult_sell_short">Mult. Venda</span>
+                            <span data-lang="mult_buy_short" data-lang-title="tip_mult_buy_short">Mult. Compra</span>
+                            <span data-lang="margin_p2p_short" data-lang-title="tip_margin_p2p_short">Margem P2P</span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <div id="categoryList"></div>
+                        <button class="btn btn-secondary btn-small" onclick="addCategory()" data-lang="btn_add_cat">+ Nova Categoria</button>
+                    </div>
+
+                    <div class="config-card" style="border-left-color: #5d4037;">
+                        <h3 data-lang="crafting_tables">Mesas de Craft</h3>
+                        <div id="craftingTablesList"></div>
+                        <button class="btn btn-secondary btn-small" onclick="addCraftingTable()" data-lang="btn_add_table">+ Nova Mesa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL IMPORTAÇÃO -->
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeImportModal()">&times;</span>
+            <h2 data-lang="modal_import_title">Importar Itens</h2>
+            
+            <div class="form-group">
+                <label data-lang="lbl_import_type">Tipo de Importação</label>
+                <select id="importType">
+                    <option value="rsg">RSG (Lua Table)</option>
+                    <option value="vorp">VORP (SQL Insert)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label data-lang="lbl_paste_code">Cole o código aqui</label>
+                <textarea id="importContent" rows="10" placeholder="Cole o código Lua ou SQL aqui..."></textarea>
+            </div>
+
+            <div style="display:flex; justify-content: flex-end;">
+                <button class="btn btn-primary" onclick="processImport()" style="width:auto;" data-lang="btn_process_import">Processar Importação</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL INPUT GENERICO -->
+    <div id="inputModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" onclick="closeInputModal()">&times;</span>
+            <h2 id="inputModalTitle">Titulo</h2>
+            <div class="form-group">
+                <label id="inputModalLabel">Label</label>
+                <input type="text" id="inputModalField" onkeydown="if(event.key==='Enter') confirmInputModal()">
+            </div>
+            <div style="display:flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn btn-secondary" onclick="closeInputModal()" style="width:auto;" data-lang="btn_cancel">Cancelar</button>
+                <button class="btn btn-primary" onclick="confirmInputModal()" style="width:auto;" data-lang="btn_confirm_delete">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CRIAÇÃO / EDIÇÃO -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()" title="Fechar Modal">&times;</span>
+            <h2 id="modalTitle" data-lang="modal_manage_title">Gerenciar Item</h2>
+            <form id="itemForm">
+                <input type="hidden" id="edit_index" value="-1">
+                
+                <div style="display:flex; gap:15px; margin-bottom: 15px;">
+                    <div class="form-group" style="flex:1;">
+                        <label data-lang="item_id">ID do Item</label>
+                        <input type="text" id="modal_itemId" required>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label data-lang="item_name">Nome</label>
+                        <input type="text" id="modal_itemName" required>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label data-lang="category">Categoria</label>
+                        <!-- ATUALIZAÇÃO AQUI: Botão de Auto Cat Single -->
+                        <div style="display:flex; gap:5px;">
+                            <select id="modal_itemCategory" class="category-select" onchange="previewPrices()" style="flex:1"></select>
+                            <button type="button" class="btn btn-secondary btn-ai" style="width:auto; padding:0 10px; background: linear-gradient(135deg, #7b1fa2, #4a148c); border-color: #9c27b0;" onclick="generateAICategory(this)" data-lang-title="tooltip_auto_cat_single">✨</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:15px; margin-bottom: 15px;">
+                    <div class="form-group" style="flex:2;">
+                        <label data-lang="description">Descrição</label>
+                        <div style="display:flex; gap:5px;">
+                            <textarea id="modal_description" rows="1" style="flex:1"></textarea>
+                            <button type="button" class="btn btn-secondary btn-ai" style="width:auto; padding:0 10px;" onclick="generateAIDescription()" data-lang="btn_generate_ai">✨ Gerar</button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label data-lang="image_name" data-lang-title="tip_image_override">Nome Imagem (Opcional)</label>
+                        <input type="text" id="modal_imageOverride">
+                        <small style="color:var(--cor-texto-secundario)" data-lang="tip_png_ext">Extensão .png automática</small>
+                    </div>
+                </div>
+
+                <!-- FRAMEWORK SPECIFIC DATA SECTION -->
+                <div class="section-box" style="margin-bottom:15px; border-left: 4px solid var(--cor-info);">
+                    <h3 id="frameworkHeader" style="border:none; padding-bottom:0; margin-bottom:10px; font-size:1em; color: var(--cor-info);" data-lang="header_framework_data">Dados da Framework</h3>
+                    <div id="frameworkFields" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">
+                        <!-- Dynamic content injected by JS -->
+                    </div>
+                </div>
+
+                <div class="section-box">
+                    <label style="display:flex; align-items:center;">
+                        <input type="checkbox" id="modal_isCrafted" onchange="toggleCraftMode()" style="width:auto; margin-right:10px;">
+                        <span data-lang="is_crafted">Item Craftável? (Habilitar Receitas)</span>
+                    </label>
+                    
+                    <div id="modal_craftingSection" style="display:none; margin-top:15px;">
+                        <div id="recipesContainer"></div>
+                        <div style="display:flex; gap:10px;">
+                            <button type="button" class="btn btn-secondary" onclick="addRecipeCard()" style="border: 1px dashed var(--cor-borda-forte); flex:1;" data-lang="btn_add_variant">+ Adicionar Variante de Craft</button>
+                             <button type="button" class="btn btn-secondary btn-ai" onclick="generateAIRecipe()" style="flex:1;" data-lang="btn_suggest_recipe">✨ Sugerir Receita IA</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:10px;">
+                    <label data-lang="manual_cost">Custo Base Manual ($)</label>
+                    <input type="number" step="0.01" id="modal_costPrice" onchange="previewPrices()" placeholder="0.00">
+                    <small style="color:var(--cor-texto-secundario);" data-lang="manual_cost_hint">Usado se não houver receitas ou se 'Item Craftável' estiver desmarcado.</small>
+                </div>
+
+                <!-- ALIGNED GRID PREVIEW -->
+                <div class="calc-preview">
+                    <!-- Row 1 -->
+                    <div class="calc-item">
+                        <small data-lang="calc_base">Custo Base</small>
+                        <span id="modal_prevBase" style="color:#ddd;">$ 0.00</span>
+                    </div>
+                    <div class="calc-item">
+                        <small data-lang="calc_p2p">P2P Sugerido</small>
+                        <span id="modal_prevP2P" class="val-p2p">$ 0.00</span>
+                    </div>
+                    <!-- Row 2 -->
+                    <div class="calc-item">
+                        <small data-lang="calc_sell">NPC Vende</small>
+                        <span id="modal_prevSell" class="val-sell">$ 0.00</span>
+                    </div>
+                    <div class="calc-item">
+                        <small data-lang="calc_buy">NPC Paga</small>
+                        <span id="modal_prevBuy" class="val-buy">$ 0.00</span>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button type="button" class="btn btn-secondary btn-export" onclick="exportLua()" style="flex:1;" data-lang="btn_export_lua">Copiar Craft Lua</button>
+                    <button type="button" class="btn btn-secondary btn-export" style="background-color: var(--cor-info); border-color: #01579b; flex:1;" onclick="exportItemDefinition()" id="btnExportDef" data-lang="btn_export_item_def">Exportar Item</button>
+                    <button type="submit" class="btn btn-primary" style="flex:2;" data-lang="btn_save">Salvar Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DELETE -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+            <h2 style="color: var(--cor-erro);" data-lang="delete_title">Confirmar Exclusão</h2>
+            <p id="deleteMsg" style="color: var(--cor-texto-secundario);" data-lang="delete_msg">Deseja excluir este item?</p>
+            <p id="deleteItemName" style="font-weight: bold; color: var(--cor-texto-principal); font-size: 1.2em; margin: 20px 0;"></p>
+            <div class="delete-btns">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()" style="width: auto;" data-lang="btn_cancel">Cancelar</button>
+                <button class="btn" style="background-color: var(--cor-erro); color: white; width: auto; border-color: var(--cor-erro-borda);" onclick="confirmDelete()" data-lang="btn_confirm_delete">Sim, Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS - ORDEM IMPORTA -->
+    <script src="locale.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
