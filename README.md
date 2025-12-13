@@ -86,4 +86,3 @@ All data is saved automatically to your browser's **Local Storage**. However, it
 **btc-ECTool** was created to simplify the complex task of balancing economy and writing configuration files for RedM servers.
 
 * **Author**: BeTiuCia Scripts
-]]
