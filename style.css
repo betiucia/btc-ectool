@@ -409,3 +409,252 @@ tr.item-row:hover { background-color: var(--cor-fundo-hover-leve); cursor: point
 /* Toast */
 .toast { visibility: hidden; min-width: 250px; background-color: var(--cor-destaque); color: var(--cor-texto-botao-destaque); text-align: center; border-radius: 2px; padding: 16px; position: fixed; z-index: 1001; left: 50%; bottom: 30px; transform: translateX(-50%); box-shadow: 0 4px 8px rgba(0,0,0,0.5); font-family: var(--fonte-destaque); font-weight: bold; opacity: 0; transition: opacity 0.3s, bottom 0.3s; }
 .toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+
+
+/* --- JOBS KANBAN SYSTEM --- */
+
+.kanban-container {
+    display: flex;
+    overflow-x: auto;
+    gap: 20px;
+    padding-bottom: 20px;
+    align-items: flex-start;
+    min-height: 500px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cor-destaque) var(--cor-scrollbar-track);
+}
+
+.kanban-container::-webkit-scrollbar { height: 10px; }
+.kanban-container::-webkit-scrollbar-track { background: var(--cor-scrollbar-track); }
+.kanban-container::-webkit-scrollbar-thumb { background-color: var(--cor-scrollbar-thumb); border-radius: 5px; }
+.kanban-container::-webkit-scrollbar-thumb:hover { background-color: var(--cor-scrollbar-thumb-hover); }
+
+.kanban-column {
+    background-color: var(--cor-fundo-painel-secundario);
+    min-width: 320px;
+    width: 320px;
+    border-radius: 4px;
+    border: 1px solid var(--cor-borda-fraca);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    max-height: 80vh; /* Para scroll interno se tiver muitos jobs */
+}
+
+.kanban-header {
+    padding: 15px;
+    background-color: rgba(0,0,0,0.3);
+    border-bottom: 2px solid var(--cor-destaque-transparente-borda);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.kanban-title-input {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--cor-destaque);
+    font-family: var(--fonte-destaque);
+    font-size: 1.1em;
+    padding: 5px;
+    width: 70%;
+    cursor: text;
+}
+
+.kanban-title-input:focus {
+    border-color: var(--cor-destaque);
+    background-color: var(--cor-fundo-input);
+}
+
+.kanban-body {
+    padding: 10px;
+    flex-grow: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 50px; /* Drop zone */
+}
+
+.kanban-body::-webkit-scrollbar { width: 5px; }
+.kanban-body::-webkit-scrollbar-thumb { background: #555; }
+
+/* Job Card */
+.job-card {
+    background-color: var(--cor-fundo-item-fila);
+    border: 1px solid var(--cor-borda-fraca);
+    border-left: 3px solid var(--cor-destaque);
+    border-radius: 2px;
+    padding: 10px;
+    cursor: grab;
+    transition: transform 0.1s, box-shadow 0.2s, background-color 0.2s;
+    user-select: none;
+}
+
+.job-card:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+}
+
+.job-card:active {
+    cursor: grabbing;
+}
+
+.job-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.job-name {
+    font-weight: bold;
+    color: var(--cor-texto-principal);
+    font-size: 1.1em;
+}
+
+.job-stats {
+    font-size: 0.9em;
+    color: var(--cor-texto-secundario);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.job-gain {
+    color: var(--cor-sucesso);
+    font-weight: bold;
+}
+
+.job-time {
+    font-size: 0.8em;
+    color: var(--cor-texto-desabilitado-forte);
+}
+
+/* Drag & Drop Visuals */
+.job-card.dragging {
+    opacity: 0.5;
+    border: 2px dashed var(--cor-destaque);
+}
+
+.kanban-body.drag-over {
+    background-color: rgba(193, 164, 123, 0.05);
+    border: 2px dashed var(--cor-destaque-transparente-borda);
+}
+
+/* Job Modal Specifics */
+.job-items-table-container {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--cor-borda-muito-fraca);
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 2px;
+}
+
+.job-item-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.job-calc-summary {
+    background: #000;
+    padding: 15px;
+    border: 1px solid var(--cor-borda-media);
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.job-calc-field label {
+    font-size: 0.8em;
+    color: var(--cor-texto-secundario);
+    text-transform: uppercase;
+}
+
+.job-calc-field span {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: var(--cor-sucesso);
+    font-family: var(--fonte-principal);
+}
+
+.job-tool-row {
+    display: grid;
+    grid-template-columns: 2fr 0.6fr 0.6fr 0.6fr 30px;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 5px;
+    border-radius: 2px;
+}
+
+.job-tool-options {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8em;
+}
+
+.job-tool-options label {
+    margin: 0;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--cor-texto-secundario);
+}
+
+.job-tool-deg-input {
+    width: 100%;
+}
+
+.job-tool-deg-input:disabled {
+    opacity: 0.3;
+    border-color: transparent;
+    background: transparent;
+    color: transparent;
+}
+
+/* Tooltip visual override for checkbox area */
+.consumed-check:checked + span {
+    color: var(--cor-erro);
+    font-weight: bold;
+}
+
+/* Ajuste no resumo do modal para mostrar Bruto vs Liquido */
+.job-calc-summary-detailed {
+    background: #000;
+    padding: 10px;
+    border: 1px solid var(--cor-borda-media);
+    margin-top: 20px;
+    font-size: 0.9em;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px dashed var(--cor-borda-muito-fraca);
+}
+
+.summary-row.total {
+    border-top: 1px solid var(--cor-borda-fraca);
+    border-bottom: none;
+    margin-top: 5px;
+    padding-top: 8px;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.val-cost { color: var(--cor-erro); }
+.val-gross { color: var(--cor-texto-secundario); }

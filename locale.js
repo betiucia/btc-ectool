@@ -1,6 +1,6 @@
 const translations = {
     pt: {
-        // ... (traduções existentes)
+        // ... (traduções existentes mantidas)
         config_title: "Configurações de Economia", config_title_simple: "Configurações", config_short: "Configurações", global_defaults: "Padrões Globais", mult_npc_sell: "Mult. NPC Vende (Loja)", mult_npc_buy: "Mult. NPC Compra (Sink)", margin_p2p: "Margem P2P (%)", img_path: "Caminho da Pasta de Imagens", categories: "Categorias", crafting_tables: "Mesas de Craft", registered_items: "Itens Cadastrados", tip_npc_sell: "Fator multiplicador aplicado ao custo base para definir o preço de venda no NPC (Loja). Ex: 2.0 significa que o NPC vende pelo dobro do custo.", tip_npc_buy: "Fator multiplicador aplicado ao custo base para definir o preço de compra pelo NPC (Sink). Ex: 0.5 significa que o NPC paga 50% do custo.", tip_p2p: "Porcentagem de lucro sugerida para o comércio entre jogadores (Player to Player) acima do custo base.", tip_img_path: "Caminho base para carregar as imagens (URL ou Pasta local). Ex: img/items/ ou https://site.com/imgs/", tip_image_override: "Nome do arquivo da imagem. Se vazio, usa o ID.", tip_png_ext: "Extensão .png automática", col_item: "Item", col_cat: "Categ.", col_base: "Custo Base", col_best: "(Melhor)", col_sell: "NPC Vende", col_shop: "(Loja)", col_buy: "NPC Paga", col_sink: "(Sink)", col_p2p: "P2P", col_player: "(Player)", col_actions: "Ações", modal_manage_title: "Gerenciar Item", item_id: "ID do Item", item_name: "Nome", category: "Categoria", description: "Descrição", image_name: "Nome Imagem (Opcional)", is_crafted: "Item Craftável? (Habilitar Receitas)", manual_cost: "Custo Base Manual ($)", manual_cost_hint: "Usado se não houver receitas ou se 'Item Craftável' estiver desmarcado.", calc_base: "Custo Base (Menor)", calc_sell: "NPC Vende", calc_buy: "NPC Paga", calc_p2p: "P2P Sugerido", btn_save: "Salvar Item", btn_cancel: "Cancelar", btn_confirm_delete: "Confirmar", btn_add_cat: "+ Nova Categoria", btn_add_table: "+ Nova Mesa", btn_add_variant: "+ Adicionar Variante de Craft", btn_export_lua: "Copiar Craft Lua", btn_get_crafts: "Obter Crafts", header_name: "Nome", header_mult_sell: "Mult. Venda", header_mult_buy: "Mult. Compra", header_margin: "Margem P2P", lbl_recipe_name: "Nome da Variante (ex: Fogueira)", lbl_tables: "Mesas de Craft:", lbl_time: "Tempo (s)", lbl_level: "Level", lbl_queue: "Fila de Prod.", lbl_ing_header: "Ingrediente", lbl_qty: "Qtd", lbl_return: "Retorno", lbl_tools_header: "Ferramentas", delete_title: "Confirmar Exclusão", delete_msg: "Deseja excluir este item?", delete_msg_item: "Deseja excluir este item?", delete_msg_cat: "Deseja excluir esta categoria?", delete_msg_table: "Deseja excluir esta mesa?", prompt_id_cat: "ID da Categoria:", prompt_id_table: "Nome da Mesa:", confirm_remove: "Remover?", alert_id_exists: "ID já existe!", alert_copied: "Dados copiados", alert_no_crafts: "Nenhum craft encontrado para esta seleção.", search_placeholder: "Buscar item, categoria, craft...", used_in_recipes: "Usado em {0} receitas", variant_new: "Nova Variante", craft_badge_multi: "CRAFT (x{0})", craft_badge: "CRAFT", btn_import: "Importar", modal_import_title: "Importar Itens", lbl_import_type: "Tipo de Importação", lbl_paste_code: "Cole o código aqui", btn_process_import: "Processar Importação", import_success: "Importado: {0} itens. Ignorado (Duplicado): {1}.", api_key_label: "Google Gemini API Key", title_new_cat: "Nova Categoria", title_new_table: "Nova Mesa", lbl_cat_id: "ID da Categoria (sem espaços)", lbl_table_name: "Nome da Mesa", data_backup: "Gerenciamento de Dados", btn_download_json: "💾 Baixar Backup (JSON)", btn_upload_json: "📂 Restaurar Backup", backup_hint: "Os dados são salvos automaticamente no navegador. Use o Backup para segurança ou transferir.", tooltip_copy_all: "Gera o código Lua de TODOS os itens craftáveis de uma vez.", tooltip_create_item: "Criar novo item", tooltip_import_items: "Importar Itens", btn_generate_ai: "✨ Gerar", btn_suggest_recipe: "✨ Sugerir Receita IA", btn_edit: "Editar", ph_qty: "Qtd", ph_ret: "Ret", ph_deg: "Deg %", ph_table_name: "Nome da Mesa", ph_global: "Global", lbl_language: "Idioma / Language", ph_auto: "Auto", opt_select: "Selecione...", lbl_cost: "Custo:", lbl_tool_col: "Ferramenta", lbl_deg_col: "Degradação",
         err_api_key: "Erro: API Key não configurada!",
         err_ai_call: "Erro na chamada da IA.",
@@ -51,12 +51,51 @@ const translations = {
         toast_auto_cat_start: "✨ Analisando categorias...",
         toast_auto_cat_success: "{0} itens categorizados com sucesso!",
         toast_no_uncategorized: "Não há itens sem categoria para processar.",
+        lbl_amount_craft: "Qtd. Recebida",
         
-        // NOVA CHAVE
-        lbl_amount_craft: "Qtd. Recebida"
+        // --- JOBS & TOOLS ---
+        tab_jobs: "Empregos (Jobs)",
+        tier_early: "Early Game",
+        tier_mid: "Mid Game",
+        tier_late: "Late Game",
+        btn_add_job: "+ Job",
+        btn_add_tier: "+ Tier",
+        modal_job_title: "Configurar Emprego",
+        lbl_job_name: "Nome do Emprego",
+        lbl_session_time: "Tempo da Sessão (Minutos)",
+        lbl_direct_gain: "Ganho Monetário Direto ($)",
+        lbl_items_gain: "Ganho em Itens (Farm)",
+        lbl_total_session: "Total por Sessão",
+        lbl_gain_per_min: "Ganho / Minuto",
+        delete_msg_tier: "Excluir Tier? (Isso apagará os jobs dentro dele)",
+        delete_msg_job: "Excluir Job?",
+        lbl_rename_tier: "Renomear Tier",
+        lbl_tier_name: "Nome do Tier",
+        hint_job_calc: "Defina quanto o emprego ganha em X minutos (seja dinheiro direto ou itens para vender no NPC).",
+        btn_add_item_row: "+ Item Farmado",
+        lbl_expenses: "Custos / Ferramentas Usadas",
+        btn_add_tool_row: "+ Ferramenta/Item Gasto",
+        lbl_consumed: "Consumido?",
+        lbl_degradation_short: "Deg%",
+        tip_consumed: "Marque se o item some após o uso (ex: Isca, Comida). Se desmarcado, usa a degradação.",
+        lbl_profit_npc: "Lucro Líquido (NPC)",
+        lbl_profit_p2p: "Lucro Líquido (P2P)",
+        lbl_gross: "Bruto",
+        lbl_costs: "Custos",
+        
+        // --- NOVAS TRADUÇÕES SOLICITADAS ---
+        title_new_tier: "Novo Nível (Tier)",
+        lbl_job_cost: "Custo",
+        
+        // Tooltips do Modal de Jobs
+        tip_job_name: "Identificador do trabalho para exibição no Kanban.",
+        tip_job_time: "Tempo total necessário para completar a rota ou sessão de trabalho.",
+        tip_job_money: "Valor em dinheiro recebido diretamente ao final do trabalho (Salário fixo).",
+        tip_job_items: "Itens recebidos durante o trabalho que podem ser vendidos.",
+        tip_job_tools: "Ferramentas que desgastam ou itens que são consumidos para realizar o trabalho."
     },
     en: {
-        // ... (existing translations)
+        // ... (previous translations kept)
         config_title: "Economy Settings", config_title_simple: "Settings", config_short: "Settings", global_defaults: "Global Defaults", mult_npc_sell: "NPC Sell Mult (Shop)", mult_npc_buy: "NPC Buy Mult (Sink)", margin_p2p: "P2P Margin (%)", img_path: "Images Folder Path", categories: "Categories", crafting_tables: "Crafting Tables", registered_items: "Registered Items", tip_npc_sell: "Multiplier applied to base cost to determine NPC selling price (Shop). E.g., 2.0 means NPC sells for double the cost.", tip_npc_buy: "Multiplier applied to base cost to determine NPC buying price (Sink). E.g., 0.5 means NPC pays 50% of the cost.", tip_p2p: "Suggested profit percentage for player-to-player trade above base cost.", tip_img_path: "Base path to load images (URL or local folder). E.g., img/items/ or https://site.com/imgs/", tip_image_override: "Image filename. If empty, uses ID.", tip_png_ext: "Automatic .png extension", col_item: "Item", col_cat: "Cat.", col_base: "Base Cost", col_best: "(Best)", col_sell: "NPC Sells", col_shop: "(Shop)", col_buy: "NPC Pays", col_sink: "(Sink)", col_p2p: "P2P", col_player: "(Player)", col_actions: "Actions", modal_manage_title: "Manage Item", item_id: "Item ID", item_name: "Name", category: "Category", description: "Description", image_name: "Image Name (Optional)", is_crafted: "Craftable Item? (Enable Recipes)", manual_cost: "Manual Base Cost ($)", manual_cost_hint: "Used if no recipes or 'Craftable Item' is unchecked.", calc_base: "Base Cost (Lowest)", calc_sell: "NPC Sells", calc_buy: "NPC Pays", calc_p2p: "Suggested P2P", btn_save: "Save Item", btn_cancel: "Cancel", btn_confirm_delete: "Confirm", btn_add_cat: "+ New Category", btn_add_table: "+ New Table", btn_add_variant: "+ Add Craft Variant", btn_export_lua: "Copy Craft Lua", btn_get_crafts: "Get Crafts", header_name: "Name", header_mult_sell: "Sell Mult", header_mult_buy: "Buy Mult", header_margin: "P2P Margin", lbl_recipe_name: "Variant Name (e.g. Campfire)", lbl_tables: "Crafting Tables:", lbl_time: "Time (s)", lbl_level: "Level", lbl_queue: "Prod. Queue", lbl_ing_header: "Ingredient", lbl_qty: "Qty", lbl_return: "Return", lbl_tools_header: "Tools", delete_title: "Confirm Deletion", delete_msg: "Do you want to delete this item?", delete_msg_item: "Do you want to delete this item?", delete_msg_cat: "Do you want to delete this category?", delete_msg_table: "Do you want to delete this table?", prompt_id_cat: "Category ID:", prompt_id_table: "Table Name:", confirm_remove: "Remove?", alert_id_exists: "ID already exists!", alert_copied: "Data copied", alert_no_crafts: "No crafts found for this selection.", search_placeholder: "Search item, category, craft...", used_in_recipes: "Used in {0} recipes", variant_new: "New Variant", craft_badge_multi: "CRAFT (x{0})", craft_badge: "CRAFT", btn_import: "Import", modal_import_title: "Import Items", lbl_import_type: "Import Type", lbl_paste_code: "Paste code here", btn_process_import: "Process Import", import_success: "Imported: {0} items. Skipped (Duplicate): {1}.", api_key_label: "Google Gemini API Key", title_new_cat: "New Category", title_new_table: "New Table", lbl_cat_id: "Category ID (no spaces)", lbl_table_name: "Table Name", data_backup: "Data Management", btn_download_json: "💾 Download Backup (JSON)", btn_upload_json: "📂 Restore Backup", backup_hint: "Data saves automatically to browser. Use Backup for safety or transfer.", tooltip_copy_all: "Generates Lua code for ALL craftable items at once.", tooltip_create_item: "Create new item", tooltip_import_items: "Import Items", btn_generate_ai: "✨ Generate", btn_suggest_recipe: "✨ Suggest AI Recipe", btn_edit: "Edit", ph_qty: "Qty", ph_ret: "Ret", ph_deg: "Deg %", ph_table_name: "Table Name", ph_global: "Global", lbl_language: "Language / Idioma", ph_auto: "Auto", opt_select: "Select...", lbl_cost: "Cost:", lbl_tool_col: "Tool", lbl_deg_col: "Degradation",
         err_api_key: "Error: API Key not configured!",
         err_ai_call: "Error calling AI.",
@@ -107,12 +146,51 @@ const translations = {
         toast_auto_cat_start: "✨ Analyzing categories...",
         toast_auto_cat_success: "{0} items categorized successfully!",
         toast_no_uncategorized: "No uncategorized items to process.",
+        lbl_amount_craft: "Amount Crafted",
         
-        // NEW KEY
-        lbl_amount_craft: "Amount Crafted"
+        // --- JOBS & TOOLS ---
+        tab_jobs: "Jobs",
+        tier_early: "Early Game",
+        tier_mid: "Mid Game",
+        tier_late: "Late Game",
+        btn_add_job: "+ Job",
+        btn_add_tier: "+ Tier",
+        modal_job_title: "Manage Job",
+        lbl_job_name: "Job Name",
+        lbl_session_time: "Session Time (Minutes)",
+        lbl_direct_gain: "Direct Money Gain ($)",
+        lbl_items_gain: "Item Gains (Farm)",
+        lbl_total_session: "Session Total",
+        lbl_gain_per_min: "Gain / Minute",
+        delete_msg_tier: "Delete Tier? (This will delete jobs inside it)",
+        delete_msg_job: "Delete Job?",
+        lbl_rename_tier: "Rename Tier",
+        lbl_tier_name: "Tier Name",
+        hint_job_calc: "Define how much this job earns in X minutes (either direct money or items to sell at NPC).",
+        btn_add_item_row: "+ Farmed Item",
+        lbl_expenses: "Expenses / Tools Used",
+        btn_add_tool_row: "+ Tool/Item Cost",
+        lbl_consumed: "Consumed?",
+        lbl_degradation_short: "Deg%",
+        tip_consumed: "Check if item is gone after use (e.g. Bait, Food). If unchecked, uses degradation.",
+        lbl_profit_npc: "Net Profit (NPC)",
+        lbl_profit_p2p: "Net Profit (P2P)",
+        lbl_gross: "Gross",
+        lbl_costs: "Costs",
+        
+        // --- NEW TRANSLATIONS ---
+        title_new_tier: "New Tier",
+        lbl_job_cost: "Cost",
+        
+        // Tooltips
+        tip_job_name: "Job identifier name for the Kanban board.",
+        tip_job_time: "Total time needed to complete the route or work session.",
+        tip_job_money: "Direct money earned upon completion (e.g. Salary).",
+        tip_job_items: "Items earned during work that can be sold.",
+        tip_job_tools: "Tools that degrade or items consumed to perform the work."
     },
     de: {
-        // ... (existing translations)
+        // ... (previous translations kept)
         config_title: "Wirtschaftseinstellungen", config_title_simple: "Einstellungen", config_short: "Einstellungen", global_defaults: "Globale Standards", mult_npc_sell: "NPC Verkauf Mult (Shop)", mult_npc_buy: "NPC Kauf Mult (Sink)", margin_p2p: "P2P Marge (%)", img_path: "Pfad zum Bilderordner", categories: "Kategorien", crafting_tables: "Werkbänke", registered_items: "Registrierte Gegenstände", tip_npc_sell: "Multiplikator für Basiskosten, um den NPC-Verkaufspreis (Shop) zu bestimmen. Z.B. 2.0 bedeutet, NPC verkauft zum doppelten Preis.", tip_npc_buy: "Multiplikator für Basiskosten, um den NPC-Ankaufspreis (Sink) zu bestimmen. Z.B. 0.5 bedeutet, NPC zahlt 50% der Kosten.", tip_p2p: "Vorgeschlagener Gewinnprozentsatz für den Handel zwischen Spielern über den Basiskosten.", tip_img_path: "Basispfad zum Laden von Bildern (URL oder lokaler Ordner). Z.B. img/items/ oder https://site.com/imgs/", tip_image_override: "Bilddateiname. Wenn leer, wird die ID verwendet.", tip_png_ext: "Automatische .png Endung", col_item: "Gegenstand", col_cat: "Kat.", col_base: "Basiskosten", col_best: "(Beste)", col_sell: "NPC Verkauft", col_shop: "(Shop)", col_buy: "NPC Zahlt", col_sink: "(Sink)", col_p2p: "P2P", col_player: "(Spieler)", col_actions: "Aktionen", modal_manage_title: "Gegenstand verwalten", item_id: "Gegenstand ID", item_name: "Name", category: "Kategorie", description: "Beschreibung", image_name: "Bildname (Optional)", is_crafted: "Herstellbar? (Rezepte aktivieren)", manual_cost: "Manuelle Basiskosten ($)", manual_cost_hint: "Wird verwendet, wenn keine Rezepte vorhanden sind oder 'Herstellbar' deaktiviert ist.", calc_base: "Basiskosten (Niedrigste)", calc_sell: "NPC Verkauft", calc_buy: "NPC Zahlt", calc_p2p: "Vorgeschlagenes P2P", btn_save: "Speichern", btn_cancel: "Abbrechen", btn_confirm_delete: "Bestätigen", btn_add_cat: "+ Neue Kategorie", btn_add_table: "+ Neue Werkbank", btn_add_variant: "+ Variante hinzufügen", btn_export_lua: "Lua Craft kopieren", btn_get_crafts: "Crafts abrufen", header_name: "Name", header_mult_sell: "Verkauf Mult", header_mult_buy: "Kauf Mult", header_margin: "P2P Marge", lbl_recipe_name: "Variantenname (z.B. Lagerfeuer)", lbl_tables: "Werkbänke:", lbl_time: "Zeit (s)", lbl_level: "Level", lbl_queue: "Warteschlange", lbl_ing_header: "Zutat", lbl_qty: "Menge", lbl_return: "Rückgabe", lbl_tools_header: "Werkzeuge", delete_title: "Löschen bestätigen", delete_msg: "Möchten Sie diesen Gegenstand löschen?", delete_msg_item: "Möchten Sie diesen Gegenstand löschen?", delete_msg_cat: "Möchten Sie diese Kategorie löschen?", delete_msg_table: "Möchten Sie diese Werkbank löschen?", prompt_id_cat: "Kategorie ID:", prompt_id_table: "Werkbank Name:", confirm_remove: "Entfernen?", alert_id_exists: "ID existiert bereits!", alert_copied: "Daten kopiert", alert_no_crafts: "Keine Crafts für diese Auswahl gefunden.", search_placeholder: "Suche Gegenstand, Kategorie, Craft...", used_in_recipes: "Verwendet in {0} Rezepten", variant_new: "Neue Variante", craft_badge_multi: "CRAFT (x{0})", craft_badge: "CRAFT", btn_import: "Importieren", modal_import_title: "Gegenstände importieren", lbl_import_type: "Importtyp", lbl_paste_code: "Code hier einfügen", btn_process_import: "Import verarbeiten", import_success: "Importiert: {0} Gegenstände. Übersprungen (Duplikat): {1}.", api_key_label: "Google Gemini API Key", title_new_cat: "Neue Kategorie", title_new_table: "Neue Werkbank", lbl_cat_id: "Kategorie ID (keine Leerzeichen)", lbl_table_name: "Werkbank Name", data_backup: "Datenverwaltung", btn_download_json: "💾 Backup herunterladen (JSON)", btn_upload_json: "📂 Backup wiederherstellen", backup_hint: "Daten werden automatisch im Browser gespeichert. Nutzen Sie Backup zur Sicherheit oder Übertragung.", tooltip_copy_all: "Generiert Lua-Code für ALLE herstellbaren Gegenstände auf einmal.", tooltip_create_item: "Neuen Gegenstand erstellen", tooltip_import_items: "Gegenstände importieren", btn_generate_ai: "✨ Generieren", btn_suggest_recipe: "✨ KI-Rezept vorschlagen", btn_edit: "Bearbeiten", ph_qty: "Menge", ph_ret: "Rück", ph_deg: "Abn %", ph_table_name: "Werkbank Name", ph_global: "Global", lbl_language: "Sprache / Language", ph_auto: "Auto", opt_select: "Auswählen...", lbl_cost: "Kosten:", lbl_tool_col: "Werkzeug", lbl_deg_col: "Abnutzung",
         err_api_key: "Fehler: API Key nicht konfiguriert!",
         err_ai_call: "Fehler beim KI-Aufruf.",
@@ -163,12 +241,51 @@ const translations = {
         toast_auto_cat_start: "✨ Analysiere Kategorien...",
         toast_auto_cat_success: "{0} Items erfolgreich kategorisiert!",
         toast_no_uncategorized: "Keine nicht kategorisierten Items zu verarbeiten.",
+        lbl_amount_craft: "Hergestellte Menge",
         
-        // NEW KEY
-        lbl_amount_craft: "Hergestellte Menge"
+        // --- JOBS & TOOLS ---
+        tab_jobs: "Jobs",
+        tier_early: "Early Game",
+        tier_mid: "Mid Game",
+        tier_late: "Late Game",
+        btn_add_job: "+ Job",
+        btn_add_tier: "+ Tier",
+        modal_job_title: "Job verwalten",
+        lbl_job_name: "Jobname",
+        lbl_session_time: "Sitzungszeit (Minuten)",
+        lbl_direct_gain: "Direkter Geldgewinn ($)",
+        lbl_items_gain: "Item-Gewinne (Farm)",
+        lbl_total_session: "Sitzungssumme",
+        lbl_gain_per_min: "Gewinn / Minute",
+        delete_msg_tier: "Tier löschen? (Dies löscht Jobs darin)",
+        delete_msg_job: "Job löschen?",
+        lbl_rename_tier: "Tier umbenennen",
+        lbl_tier_name: "Tiername",
+        hint_job_calc: "Definieren Sie, wie viel dieser Job in X Minuten verdient (Geld oder Items).",
+        btn_add_item_row: "+ Gefarmtes Item",
+        lbl_expenses: "Ausgaben / Werkzeuge",
+        btn_add_tool_row: "+ Werkzeugkosten",
+        lbl_consumed: "Verbraucht?",
+        lbl_degradation_short: "Abn%",
+        tip_consumed: "Ankreuzen, wenn Item verbraucht wird. Wenn nicht, wird Abnutzung genutzt.",
+        lbl_profit_npc: "Reingewinn (NPC)",
+        lbl_profit_p2p: "Reingewinn (P2P)",
+        lbl_gross: "Brutto",
+        lbl_costs: "Kosten",
+        
+        // --- NEW TRANSLATIONS ---
+        title_new_tier: "Neuer Tier",
+        lbl_job_cost: "Kosten",
+        
+        // Tooltips
+        tip_job_name: "Job-Identifikator für das Kanban-Board.",
+        tip_job_time: "Gesamtzeit für eine Route oder Arbeitssitzung.",
+        tip_job_money: "Direktes Geld bei Abschluss (z.B. Gehalt).",
+        tip_job_items: "Items, die verkauft werden können.",
+        tip_job_tools: "Werkzeuge oder Verbrauchsmaterialien, die Kosten verursachen."
     },
     ru: {
-        // ... (existing translations)
+        // ... (previous translations kept)
         config_title: "Настройки экономики", config_title_simple: "Настройки", config_short: "Настройки", global_defaults: "Глобальные настройки", mult_npc_sell: "Множ. продажи NPC (Магазин)", mult_npc_buy: "Множ. покупки NPC (Скупка)", margin_p2p: "Маржа P2P (%)", img_path: "Путь к папке с изображениями", categories: "Категории", crafting_tables: "Верстаки", registered_items: "Зарегистрированные предметы", tip_npc_sell: "Множитель к базовой цене для продажи NPC. Пример: 2.0 значит NPC продает в 2 раза дороже.", tip_npc_buy: "Множитель к базовой цене для покупки NPC. Пример: 0.5 значит NPC покупает за 50% цены.", tip_p2p: "Рекомендуемый процент прибыли для торговли между игроками.", tip_img_path: "Базовый путь для загрузки картинок (URL или папка). Пример: img/items/", tip_image_override: "Имя файла картинки. Если пусто, используется ID.", tip_png_ext: "Автоматическое расширение .png", col_item: "Предмет", col_cat: "Кат.", col_base: "База", col_best: "(Лучшая)", col_sell: "Продажа NPC", col_shop: "(Маг.)", col_buy: "Покупка NPC", col_sink: "(Скуп.)", col_p2p: "P2P", col_player: "(Игрок)", col_actions: "Действия", modal_manage_title: "Управление предметом", item_id: "ID предмета", item_name: "Название", category: "Категория", description: "Описание", image_name: "Имя картинки (опц.)", is_crafted: "Крафтится? (Включить рецепты)", manual_cost: "Ручная базовая цена ($)", manual_cost_hint: "Используется если нет рецептов или крафт отключен.", calc_base: "Базовая цена (Мин.)", calc_sell: "Продажа NPC", calc_buy: "Покупка NPC", calc_p2p: "Реком. P2P", btn_save: "Сохранить", btn_cancel: "Отмена", btn_confirm_delete: "Подтвердить", btn_add_cat: "+ Категория", btn_add_table: "+ Верстак", btn_add_variant: "+ Вариант крафта", btn_export_lua: "Копировать Lua", btn_get_crafts: "Получить крафты", header_name: "Название", header_mult_sell: "Множ. прод.", header_mult_buy: "Множ. пок.", header_margin: "Маржа", lbl_recipe_name: "Название варианта (напр. Костер)", lbl_tables: "Верстаки:", lbl_time: "Время (с)", lbl_level: "Уровень", lbl_queue: "Очередь", lbl_ing_header: "Ингредиент", lbl_qty: "Кол-во", lbl_return: "Возврат", lbl_tools_header: "Инструменты", delete_title: "Подтверждение удаления", delete_msg: "Вы хотите удалить этот предмет?", delete_msg_item: "Вы хотите удалить этот предмет?", delete_msg_cat: "Вы хотите удалить эту категорию?", delete_msg_table: "Вы хотите удалить этот верстак?", prompt_id_cat: "ID Категории:", prompt_id_table: "Название верстака:", confirm_remove: "Удалить?", alert_id_exists: "ID уже существует!", alert_copied: "Данные скопированы", alert_no_crafts: "Крафты не найдены.", search_placeholder: "Поиск предмета, категории...", used_in_recipes: "В {0} рецептах", variant_new: "Новый вариант", craft_badge_multi: "КРАФТ (x{0})", craft_badge: "КРАФТ", btn_import: "Импорт", modal_import_title: "Импорт предметов", lbl_import_type: "Тип импорта", lbl_paste_code: "Вставьте код", btn_process_import: "Обработать", import_success: "Импортировано: {0}. Пропущено: {1}.", api_key_label: "Google Gemini API Key", title_new_cat: "Новая категория", title_new_table: "Новый верстак", lbl_cat_id: "ID Категории (без пробелов)", lbl_table_name: "Название верстака", data_backup: "Управление данными", btn_download_json: "💾 Скачать бэкап (JSON)", btn_upload_json: "📂 Загрузить бэкап", backup_hint: "Данные сохраняются автоматически. Используйте бэкап для переноса.", tooltip_copy_all: "Генерирует Lua код для ВСЕХ крафтовых предметов сразу.", tooltip_create_item: "Создать предмет", tooltip_import_items: "Импорт предметов", btn_generate_ai: "✨ Создать", btn_suggest_recipe: "✨ Предложить рецепт ИИ", btn_edit: "Ред.", ph_qty: "Кол-во", ph_ret: "Возвр", ph_deg: "Изн %", ph_table_name: "Название верстака", ph_global: "Глобал.", lbl_language: "Язык / Language", ph_auto: "Авто", opt_select: "Выбрать...", lbl_cost: "Цена:", lbl_tool_col: "Инструмент", lbl_deg_col: "Износ",
         err_api_key: "Ошибка: API Key не настроен!",
         err_ai_call: "Ошибка вызова ИИ.",
@@ -219,8 +336,47 @@ const translations = {
         toast_auto_cat_start: "✨ Анализ категорий...",
         toast_auto_cat_success: "Успешно категоризировано {0} предметов!",
         toast_no_uncategorized: "Нет предметов без категорий для обработки.",
+        lbl_amount_craft: "Количество при крафте",
+
+        // --- JOBS & TOOLS ---
+        tab_jobs: "Работа",
+        tier_early: "Начальная игра",
+        tier_mid: "Середина игры",
+        tier_late: "Поздняя игра",
+        btn_add_job: "+ Работа",
+        btn_add_tier: "+ Тир",
+        modal_job_title: "Настройка работы",
+        lbl_job_name: "Название работы",
+        lbl_session_time: "Время сессии (минуты)",
+        lbl_direct_gain: "Прямой доход ($)",
+        lbl_items_gain: "Добытые предметы",
+        lbl_total_session: "Всего за сессию",
+        lbl_gain_per_min: "Доход / Минуту",
+        delete_msg_tier: "Удалить тир? (Это удалит работы внутри него)",
+        delete_msg_job: "Удалить работу?",
+        lbl_rename_tier: "Переименовать Тир",
+        lbl_tier_name: "Название Тира",
+        hint_job_calc: "Определите, сколько эта работа приносит за X минут (деньги или предметы).",
+        btn_add_item_row: "+ Предмет",
+        lbl_expenses: "Расходы / Инструменты",
+        btn_add_tool_row: "+ Инструмент",
+        lbl_consumed: "Потрачено?",
+        lbl_degradation_short: "Изн%",
+        tip_consumed: "Отметьте, если предмет исчезает (напр. Наживка). Иначе используется износ.",
+        lbl_profit_npc: "Чистая прибыль (NPC)",
+        lbl_profit_p2p: "Чистая прибыль (P2P)",
+        lbl_gross: "Грязными",
+        lbl_costs: "Расходы",
         
-        // NEW KEY
-        lbl_amount_craft: "Количество при крафте"
+        // --- NEW TRANSLATIONS ---
+        title_new_tier: "Новый Тир",
+        lbl_job_cost: "Цена",
+        
+        // Tooltips
+        tip_job_name: "Название работы для доски Канбан.",
+        tip_job_time: "Время выполнения маршрута или сессии.",
+        tip_job_money: "Деньги, полученные напрямую (зарплата).",
+        tip_job_items: "Предметы на продажу.",
+        tip_job_tools: "Инструменты или расходники."
     }
 };

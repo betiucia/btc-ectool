@@ -5,26 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BTC-ECTool</title>
     
-    <!-- Importando Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Graduate&family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet">
 
-    <!-- CSS Externo -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- TOAST -->
     <div id="toast" class="toast">Dados copiados!</div>
 
-    <!-- TABS -->
     <div class="tab-nav">
         <button class="tab-btn active" onclick="openTab('items', this)" data-lang="registered_items">Itens Cadastrados</button>
+        <button class="tab-btn" onclick="openTab('jobs', this)" data-lang="tab_jobs">Empregos (Jobs)</button>
         <button class="tab-btn" onclick="openTab('config', this)" data-lang="config_short">Configurações</button>
     </div>
 
-    <!-- TAB 1: ITENS -->
     <div id="view-items" class="tab-content active">
         <div class="container">
             <div class="panel">
@@ -60,7 +56,18 @@
         </div>
     </div>
 
-    <!-- TAB 2: CONFIGURAÇÕES -->
+    <div id="view-jobs" class="tab-content">
+        <div class="container">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 data-lang="tab_jobs">Empregos (Jobs)</h2>
+                    <button class="btn btn-secondary btn-small" onclick="addTier()" data-lang="btn_add_tier">+ Tier</button>
+                </div>
+                <div id="jobKanban" class="kanban-container"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="view-config" class="tab-content">
         <div class="container">
             <div class="panel">
@@ -70,7 +77,6 @@
                 
                 <div class="config-grid">
                     
-                    <!-- DATA / BACKUP -->
                     <div class="config-card" style="border-left-color: var(--cor-info);">
                         <h3 data-lang="data_backup">Gerenciamento de Dados</h3>
                         <div style="display:flex; gap:10px; margin-bottom:5px;">
@@ -157,7 +163,6 @@
         </div>
     </div>
 
-    <!-- MODAL IMPORTAÇÃO -->
     <div id="importModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeImportModal()">&times;</span>
@@ -182,7 +187,6 @@
         </div>
     </div>
 
-    <!-- MODAL INPUT GENERICO -->
     <div id="inputModal" class="modal">
         <div class="modal-content" style="max-width: 400px;">
             <span class="close" onclick="closeInputModal()">&times;</span>
@@ -198,7 +202,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE CRIAÇÃO / EDIÇÃO -->
     <div id="itemModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()" title="Fechar Modal">&times;</span>
@@ -217,7 +220,6 @@
                     </div>
                     <div class="form-group" style="flex:1;">
                         <label data-lang="category">Categoria</label>
-                        <!-- Dropdown de Categoria Pesquisável -->
                         <div style="display:flex; gap:5px;">
                             <div id="categoryDropdownContainer" style="flex:1;"></div>
                             <button type="button" class="btn btn-secondary btn-ai" style="width:auto; padding:0 10px; background: linear-gradient(135deg, #7b1fa2, #4a148c); border-color: #9c27b0;" onclick="generateAICategory(this)" data-lang-title="tooltip_auto_cat_single">✨</button>
@@ -240,12 +242,10 @@
                     </div>
                 </div>
 
-                <!-- FRAMEWORK SPECIFIC DATA SECTION -->
                 <div class="section-box" style="margin-bottom:15px; border-left: 4px solid var(--cor-info);">
                     <h3 id="frameworkHeader" style="border:none; padding-bottom:0; margin-bottom:10px; font-size:1em; color: var(--cor-info);" data-lang="header_framework_data">Dados da Framework</h3>
                     <div id="frameworkFields" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">
-                        <!-- Dynamic content injected by JS -->
-                    </div>
+                        </div>
                 </div>
 
                 <div class="section-box">
@@ -269,9 +269,7 @@
                     <small style="color:var(--cor-texto-secundario);" data-lang="manual_cost_hint">Usado se não houver receitas ou se 'Item Craftável' estiver desmarcado.</small>
                 </div>
 
-                <!-- ALIGNED GRID PREVIEW -->
                 <div class="calc-preview">
-                    <!-- Row 1 -->
                     <div class="calc-item">
                         <small data-lang="calc_base">Custo Base</small>
                         <span id="modal_prevBase" style="color:#ddd;">$ 0.00</span>
@@ -280,7 +278,6 @@
                         <small data-lang="calc_p2p">P2P Sugerido</small>
                         <span id="modal_prevP2P" class="val-p2p">$ 0.00</span>
                     </div>
-                    <!-- Row 2 -->
                     <div class="calc-item">
                         <small data-lang="calc_sell">NPC Vende</small>
                         <span id="modal_prevSell" class="val-sell">$ 0.00</span>
@@ -300,7 +297,6 @@
         </div>
     </div>
 
-    <!-- MODAL DELETE -->
     <div id="deleteModal" class="modal">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <span class="close" onclick="closeDeleteModal()">&times;</span>
@@ -314,8 +310,82 @@
         </div>
     </div>
 
-    <!-- SCRIPTS - ORDEM IMPORTA -->
+    <div id="jobModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeJobModal()">&times;</span>
+            <h2 data-lang="modal_job_title">Configurar Emprego</h2>
+            <p style="color:var(--cor-texto-secundario); font-size:0.9em; margin-bottom:15px;" data-lang="hint_job_calc">Defina quanto o emprego ganha em X minutos.</p>
+            
+            <form id="jobForm">
+                <input type="hidden" id="job_edit_id">
+                <input type="hidden" id="job_tier_id">
+
+                <div style="display:flex; gap:15px; margin-bottom: 15px;">
+                    <div class="form-group" style="flex:2;">
+                        <label data-lang="lbl_job_name" data-lang-title="tip_job_name">Nome do Emprego</label>
+                        <input type="text" id="job_name" required>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label data-lang="lbl_session_time" data-lang-title="tip_job_time">Tempo (Minutos)</label>
+                        <input type="number" id="job_time" min="1" value="60" onchange="calculateJobGains()">
+                    </div>
+                </div>
+
+                <div class="section-box">
+                    <div class="form-group">
+                        <label data-lang="lbl_direct_gain" data-lang-title="tip_job_money">Ganho Monetário Direto ($)</label>
+                        <input type="number" id="job_money" step="0.01" value="0" placeholder="0.00" onchange="calculateJobGains()">
+                    </div>
+                    
+                    <div style="margin-top:15px; border-top:1px dashed var(--cor-borda-fraca); padding-top:10px;">
+                        <label style="margin-bottom:10px;" data-lang="lbl_items_gain" data-lang-title="tip_job_items">Ganho em Itens (Farm)</label>
+                        <div id="jobItemsContainer" class="job-items-table-container"></div>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="addJobItemRow()" data-lang="btn_add_item_row">+ Item Farmado</button>
+                    </div>
+
+                    <div style="margin-top:15px; border-top:1px dashed var(--cor-borda-fraca); padding-top:10px;">
+                        <label style="margin-bottom:10px; color: var(--cor-erro);" data-lang="lbl_expenses" data-lang-title="tip_job_tools">Custos / Ferramentas Usadas</label>
+                        <div style="display: grid; grid-template-columns: 2fr 0.6fr 0.6fr 0.6fr 30px; gap:8px; font-size:0.75em; color:var(--cor-texto-secundario); margin-bottom:5px; padding-left:5px;">
+                            <span data-lang="col_item">Item</span>
+                            <span data-lang="ph_qty">Qtd</span>
+                            <span data-lang="lbl_degradation_short">Deg%</span>
+                            <span data-lang="lbl_consumed">Consumido?</span>
+                            <span></span>
+                        </div>
+                        <div id="jobToolsContainer" class="job-items-table-container" style="border-color: var(--cor-erro-borda);"></div>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="addJobToolRow()" style="border-color:var(--cor-erro); color:var(--cor-texto-principal);" data-lang="btn_add_tool_row">+ Ferramenta</button>
+                    </div>
+                </div>
+
+                <div class="job-calc-summary-detailed">
+                    <div class="summary-row">
+                        <span data-lang="lbl_gross">Bruto (Sessão)</span>
+                        <span id="summary_gross" class="val-gross">$ 0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span data-lang="lbl_costs">Custos (Sessão)</span>
+                        <span id="summary_cost" class="val-cost">- $ 0.00</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span data-lang="lbl_profit_npc">Lucro Líquido (NPC)</span>
+                        <span id="summary_net_npc" style="color:var(--cor-sucesso)">$ 0.00 / min</span>
+                    </div>
+                    <div class="summary-row total" style="border-top:none; margin-top:0;">
+                        <span data-lang="lbl_profit_p2p">Lucro Líquido (P2P)</span>
+                        <span id="summary_net_p2p" style="color:var(--cor-destaque)">$ 0.00 / min</span>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content: flex-end; gap: 10px; margin-top:20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeJobModal()" data-lang="btn_cancel">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" data-lang="btn_save">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="locale.js"></script>
     <script src="script.js"></script>
+    <script src="script_job.js"></script>
 </body>
 </html>

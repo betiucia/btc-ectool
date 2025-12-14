@@ -4,17 +4,22 @@ const STORAGE_KEY = 'btc_ectool';
 // --- 1. GLOBAL VARIABLES & DATA ---
 let currentLang = 'en'; // Default to English
 let globalConfig = { sellMult: 2.0, buyMult: 0.5, p2pMargin: 30, imagePath: "", framework: 'rsg' };
-let categories = [
+let categories = [];
+let craftingTables = [];
+let items = [];
 
+// --- GLOBAL JOBS DATA (Shared) ---
+let jobTiers = [
+    { id: 'tier_early', name: 'Early Game' },
+    { id: 'tier_mid', name: 'Mid Game' },
+    { id: 'tier_late', name: 'Late Game' }
 ];
-let craftingTables = [
+let jobs = []; 
 
-];
-let items = [
-];
 let currentSort = { column: 'name', direction: 'asc' };
 
-let modal, deleteModal, importModal, inputModal;
+// Global DOM Elements
+let modal, deleteModal, importModal, inputModal, jobModal;
 let itemToDeleteIndex = -1;
 let deleteTargetType = null;
 let inputModalCallback = null;
@@ -45,11 +50,22 @@ function setLanguage(lang) {
     
     updateFrameworkTexts();
     document.getElementById('searchInput').placeholder = t('search_placeholder');
+    
+    // Atualiza nomes padrão dos tiers se existirem
+    if(jobTiers.length === 3 && jobTiers[0].id === 'tier_early') {
+        jobTiers[0].name = t('tier_early');
+        jobTiers[1].name = t('tier_mid');
+        jobTiers[2].name = t('tier_late');
+    }
+
     saveLocalData(); 
     renderTable(); 
     
     renderCategories();
     renderCraftingTables();
+    
+    // Call function from script_job.js if it exists
+    if(typeof renderJobKanban === 'function') renderJobKanban();
 }
 
 function updateFrameworkTexts() {
@@ -82,27 +98,25 @@ function getTablesCheckboxesHTML(selectedTables = []) {
 }
 
 // --- 3. CUSTOM SEARCHABLE SELECT LOGIC ---
-function renderItemSearchDropdown(selectedId, className) {
+function renderItemSearchDropdown(selectedId, className, onChangeStr = "previewPrices()") {
     let selectedName = "";
     let itemsHtml = "";
     items.forEach(i => {
         if(i.id === selectedId) selectedName = i.name;
-        itemsHtml += `<div class="ds-item" onclick="selectItem(this, '${i.id}', '${i.name.replace(/'/g, "\\'")}')">${i.name} <small>${i.id}</small></div>`;
+        const safeName = i.name.replace(/'/g, "\\'");
+        itemsHtml += `<div class="ds-item" onclick="selectItem(this, '${i.id}', '${safeName}', '${onChangeStr}')">${i.name} <small>${i.id}</small></div>`;
     });
     return `
     <div class="dropdown-search">
         <input type="text" class="ds-display" placeholder="${t('opt_select')}" value="${selectedName}" onfocus="toggleDropdown(this, true)" oninput="filterDropdown(this)">
-        <input type="hidden" class="ds-value ${className}" value="${selectedId}" onchange="previewPrices()"> 
+        <input type="hidden" class="ds-value ${className}" value="${selectedId}" onchange="${onChangeStr}"> 
         <div class="ds-list">${itemsHtml}</div>
     </div>`;
 }
 
-// NOVA FUNÇÃO: Renderiza o Dropdown de Categorias (Searchable)
 function renderCategorySearchDropdown(selectedId) {
     let selectedName = "";
     let itemsHtml = "";
-    
-    // Sort categories alphabetically for better UX with safety check
     const sortedCats = [...categories].sort((a,b) => {
         const nameA = a.name || "";
         const nameB = b.name || "";
@@ -111,11 +125,10 @@ function renderCategorySearchDropdown(selectedId) {
 
     sortedCats.forEach(c => {
         if(c.id === selectedId) selectedName = c.name;
-        // Reutilizamos selectItem pois a estrutura é compatível
-        itemsHtml += `<div class="ds-item" onclick="selectItem(this, '${c.id}', '${(c.name || "").replace(/'/g, "\\'")}')">${c.name} <small>${c.id}</small></div>`;
+        const safeName = (c.name || "").replace(/'/g, "\\'");
+        itemsHtml += `<div class="ds-item" onclick="selectItem(this, '${c.id}', '${safeName}', 'previewPrices()')">${c.name} <small>${c.id}</small></div>`;
     });
 
-    // Mantemos o ID 'modal_itemCategory' no input hidden para compatibilidade
     return `
     <div class="dropdown-search">
         <input type="text" class="ds-display" id="cat_display_input" placeholder="${t('opt_select')}" value="${selectedName}" onfocus="toggleDropdown(this, true)" oninput="filterDropdown(this)">
@@ -146,13 +159,24 @@ function filterDropdown(input) {
     }
 }
 
-function selectItem(div, id, name) {
+function selectItem(div, id, name, onChangeFuncStr) {
     const container = div.parentElement.parentElement;
     const display = container.querySelector('.ds-display');
     const hidden = container.querySelector('.ds-value');
     display.value = name;
     hidden.value = id;
-    previewPrices();
+    
+    if(onChangeFuncStr) {
+        try {
+            if(window[onChangeFuncStr.replace('()','')]) {
+                window[onChangeFuncStr.replace('()','')]();
+            } else if (onChangeFuncStr.includes('calculateJobGains') && typeof calculateJobGains === 'function') {
+                calculateJobGains();
+            } else if (onChangeFuncStr.includes('previewPrices')) {
+                previewPrices();
+            }
+        } catch(e) { console.log("Executando onChange genérico error"); }
+    }
     div.parentElement.style.display = 'none';
 }
 
@@ -187,11 +211,10 @@ function addRecipeCard(data = null) {
     const rName = data ? data.name : t('variant_new');
     const rTime = data ? data.time : 5;
     const rLevel = data ? data.level : 0;
-    const rAmount = data ? (data.amount || 1) : 1; // Default amount is 1
+    const rAmount = data ? (data.amount || 1) : 1;
     const rQueue = data ? data.queue : false;
     const rTables = data ? data.tables : [];
 
-    // Added r-amount input with onchange="previewPrices()" to recalculate cost per unit
     card.innerHTML = `<div class="recipe-header"><input type="text" class="r-name" value="${rName}" placeholder="${t('lbl_recipe_name')}" style="width:50%; font-weight:bold; background:transparent; border:none; color:var(--cor-destaque);"><div style="display:flex; gap:10px; align-items:center;"><span class="recipe-cost-badge">${t('lbl_cost')} <span class="r-calc-cost">$ 0.00</span></span><button type="button" class="btn btn-small" style="background:var(--cor-erro-borda); width:auto; border-color:var(--cor-erro); color:#fff;" onclick="this.parentElement.parentElement.parentElement.remove(); previewPrices();">X</button></div></div><div style="margin-bottom:10px;"><label style="color:var(--cor-texto-secundario); font-size:0.8em;">${t('lbl_tables')}</label>${getTablesCheckboxesHTML(rTables)}</div><div class="craft-variants"><div class="form-group"><label>${t('lbl_time')}</label><input type="number" class="r-time" value="${rTime}" min="0"></div><div class="form-group"><label>${t('lbl_amount_craft')}</label><input type="number" class="r-amount" value="${rAmount}" min="1" onchange="previewPrices()"></div><div class="form-group"><label>${t('lbl_level')}</label><input type="number" class="r-level" value="${rLevel}" min="0"></div><div class="form-group" style="display:flex; align-items:flex-end; padding-bottom:10px;"><label style="cursor:pointer; font-size:0.9em; color:var(--cor-texto-principal);"><input type="checkbox" class="r-queue" ${rQueue ? 'checked' : ''} style="width:auto; margin-right:5px;">${t('lbl_queue')}</label></div></div><div style="margin-bottom:5px; font-size:0.8em; text-transform:uppercase; color:var(--cor-texto-secundario); display:flex; gap:10px;"><span style="flex:2">${t('lbl_ing_header')}</span><span style="flex:0.8">${t('lbl_qty')}</span><span style="flex:0.1"></span><span style="flex:2">${t('lbl_return')}</span><span style="flex:0.8">${t('lbl_qty')}</span><span style="width:30px"></span></div><div class="r-ingredients-list"></div><button type="button" class="btn btn-secondary btn-small" onclick="addIngToCard(this)">+ ${t('lbl_ing_header')}</button><div style="margin-top:10px; border-top:1px solid var(--cor-borda-fraca); padding-top:5px;"><div style="margin-bottom:5px; font-size:0.8em; text-transform:uppercase; color:var(--cor-texto-secundario);">${t('lbl_tools_header')}</div><div class="list-header"><span style="flex:2">${t('lbl_tool_col')}</span><span style="flex:0.5">${t('lbl_qty')}</span><span style="flex:1">${t('lbl_deg_col')}</span><span style="width:30px"></span></div><div class="r-tools-list"></div><button type="button" class="btn btn-tool btn-small" onclick="addToolToCard(this)">+ ${t('col_item')}</button></div>`;
     container.appendChild(card);
     const ingListContainer = card.querySelector('.r-ingredients-list');
@@ -223,6 +246,7 @@ function getRecipeCost(recipe, visited = []) {
 }
 
 function getBaseCost(item, visited=[]) {
+    if(!item) return 0;
     if(visited.includes(item.id)) return 0;
     visited.push(item.id);
     if(!item.isCrafted || !item.recipes || !Array.isArray(item.recipes) || item.recipes.length === 0) {
@@ -231,7 +255,6 @@ function getBaseCost(item, visited=[]) {
     let minRecipeCost = Infinity;
     item.recipes.forEach(recipe => {
         let cost = getRecipeCost(recipe, visited); 
-        // Cost per unit produced (recipe cost / amount produced)
         const amount = recipe.amount || 1;
         cost = cost / amount; 
         if(cost < minRecipeCost) minRecipeCost = cost;
@@ -257,7 +280,6 @@ function previewPrices() {
         let minCost = Infinity;
         recipeCards.forEach(card => {
             let cardCost = 0;
-            // Get the amount produced by this recipe
             const rAmount = parseFloat(card.querySelector('.r-amount').value) || 1;
 
             card.querySelectorAll('.ingredient-row').forEach(row => {
@@ -275,10 +297,8 @@ function previewPrices() {
                 const tool = items.find(i => i.id === id);
                 if(tool) cardCost += (getBaseCost(tool) * tQty) * (deg / 100);
             });
-            // Show cost per CRAFT action on the card (Total cost for the batch)
-            card.querySelector('.r-calc-cost').innerText = `$ ${cardCost.toFixed(2)}`;
             
-            // Calculate cost per UNIT (Total Cost / Amount Produced)
+            card.querySelector('.r-calc-cost').innerText = `$ ${cardCost.toFixed(2)}`;
             const costPerUnit = cardCost / rAmount;
 
             if(costPerUnit < minCost) minCost = costPerUnit;
@@ -287,7 +307,7 @@ function previewPrices() {
     } else {
         finalCost = parseFloat(document.getElementById('modal_costPrice').value) || 0;
     }
-    // Handle hidden input ID which now stores category
+    
     const catVal = document.getElementById('modal_itemCategory') ? document.getElementById('modal_itemCategory').value : '';
     const tempItem = { id: 'temp', cat: catVal, isCrafted: false, cost: finalCost };
     const prices = calculatePrices(tempItem);
@@ -363,7 +383,6 @@ function renderTable() {
             const sortedRecipes = item.recipes.map(r => ({ ...r, calcCost: getRecipeCost(r) })).sort((a,b) => a.calcCost - b.calcCost);
             let baseList='<div class="col-variant-list">', sellList='<div class="col-variant-list col-sell">', buyList='<div class="col-variant-list col-buy">', p2pList='<div class="col-variant-list col-p2p">';
             sortedRecipes.forEach(r => {
-                // Cost per unit correction
                 const rAmount = r.amount || 1;
                 const costPerUnit = r.calcCost / rAmount;
                 const rPrices = calculatePricesFromCost(costPerUnit, item);
@@ -397,7 +416,6 @@ function renderCategories() {
     const div = document.getElementById('categoryList'); div.innerHTML = '';
     categories.forEach((c, idx) => {
         const row = document.createElement('div'); row.className = 'manager-row cat-row-data'; row.dataset.id = c.id;
-        // Updated button using data-tooltip for standard CSS tooltip
         row.innerHTML = `<input type="text" class="c-name" value="${c.name}" onchange="updateCategoryData(${idx}, 'name', this.value)"><input type="number" class="c-sell" value="${c.sellMult??''}" placeholder="${t('ph_global')}" step="0.1" onchange="updateCategoryData(${idx}, 'sellMult', this.value)"><input type="number" class="c-buy" value="${c.buyMult??''}" placeholder="${t('ph_global')}" step="0.1" onchange="updateCategoryData(${idx}, 'buyMult', this.value)"><input type="number" class="c-p2p" value="${c.p2pMargin??''}" placeholder="${t('ph_global')}" step="1" onchange="updateCategoryData(${idx}, 'p2pMargin', this.value)"><button class="btn btn-small btn-get" style="background:var(--cor-info); width:auto;" onclick="copyCategoryCrafts(${idx})" data-tooltip="${t('tooltip_copy_cat_crafts')}">📋</button><button class="btn btn-small" style="background:var(--cor-erro-borda); width:auto; border-color:var(--cor-erro); color:#fff;" onclick="openDeleteModal('category', ${idx})">X</button>`;
         div.appendChild(row);
     });
@@ -408,16 +426,14 @@ function updateCategoryData(index, field, value) {
         value = (value === "") ? null : parseFloat(value);
     }
     categories[index][field] = value;
-    // Removido populateCategorySelects daqui pois o modal agora renderiza dinamicamente ao abrir
     saveLocalData();
-    renderTable(); // Re-calculate prices as category multipliers might have changed
+    renderTable(); 
 }
 
 function renderCraftingTables() {
     const div = document.getElementById('craftingTablesList'); div.innerHTML = '';
     craftingTables.forEach((tbl, idx) => {
         const row = document.createElement('div'); row.className = 'manager-row-table table-row-data';
-        // Updated button using data-tooltip for standard CSS tooltip
         row.innerHTML = `<input type="text" class="t-name" value="${tbl.name}" placeholder="${t('ph_table_name')}" onchange="updateTableData(${idx},'name',this.value)"><button class="btn btn-small btn-get" style="background:var(--cor-info); width:auto;" onclick="copyTableCrafts(${idx})" data-tooltip="${t('tooltip_copy_table_crafts')}">📋</button><button class="btn btn-small" style="background:var(--cor-erro-borda); width:auto; border-color:var(--cor-erro); color:#fff;" onclick="openDeleteModal('table', ${idx})">X</button>`;
         div.appendChild(row);
     });
@@ -461,14 +477,7 @@ function addCategory() {
         categories.push({id: id, name: name, sellMult:null, buyMult:null, p2pMargin:null}); 
         saveLocalData();
         renderCategories(); 
-        populateCategorySelects(); 
     });
-}
-
-function populateCategorySelects() {
-    // Legacy support for non-modal inputs if needed, can be empty or removed if no selects exist
-    const selects = document.querySelectorAll('.category-select');
-    selects.forEach(sel => { const old=sel.value; sel.innerHTML='<option value="" disabled selected>Selecione...</option>'; categories.forEach(c=>{sel.innerHTML+=`<option value="${c.id}">${c.name}</option>`}); if(old) sel.value=old; });
 }
 
 function updateCalculations() {
@@ -483,6 +492,7 @@ function updateCalculations() {
     updateFrameworkTexts();
     saveLocalData();
     renderTable();
+    if(typeof calculateJobGains === 'function') calculateJobGains();
 }
 
 function handleSort(column) {
@@ -505,6 +515,8 @@ function openTab(tabName, btnElement) {
     document.getElementById("view-" + tabName).classList.add("active");
     if(btnElement) btnElement.classList.add("active");
     else if(tabName === 'items' && buttons[0]) buttons[0].classList.add("active");
+
+    if(tabName === 'jobs' && typeof renderJobKanban === 'function') renderJobKanban();
 }
 
 function saveLocalData() {
@@ -514,7 +526,9 @@ function saveLocalData() {
         craftingTables: craftingTables,
         globalConfig: globalConfig,
         apiKey: apiKey,
-        currentLang: currentLang 
+        currentLang: currentLang,
+        jobTiers: jobTiers,
+        jobs: jobs
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
@@ -531,6 +545,10 @@ function loadLocalData() {
             if(data.apiKey) apiKey = data.apiKey;
             if(data.currentLang) currentLang = data.currentLang; 
             
+            // LOAD JOBS DATA
+            if(data.jobTiers) jobTiers = data.jobTiers;
+            if(data.jobs) jobs = data.jobs;
+
             // Update UI inputs
             if(document.getElementById('globalSellMult')) document.getElementById('globalSellMult').value = globalConfig.sellMult;
             if(document.getElementById('globalBuyMult')) document.getElementById('globalBuyMult').value = globalConfig.buyMult;
@@ -568,9 +586,9 @@ function uploadJSON(input) {
                 loadLocalData();
                 renderCategories();
                 renderCraftingTables();
-                populateCategorySelects();
                 renderTable();
-                updateFrameworkTexts(); 
+                updateFrameworkTexts();
+                if(typeof renderJobKanban === 'function') renderJobKanban();
                 showToast(t('toast_restore_success'));
             } else {
                 showToast(t('err_invalid_file'));
@@ -641,607 +659,177 @@ async function generateAIRecipe() {
     }
 }
 
-// --- NEW AI CATEGORY FUNCTIONS ---
-
 async function generateAICategory(btn) {
     const name = document.getElementById('modal_itemName').value;
     const desc = document.getElementById('modal_description').value;
     if (!name) { showToast(t('err_fill_name')); return; }
-
     const originalText = btn.innerText;
     btn.disabled = true;
     btn.innerText = "⏳";
-
     const catList = categories.map(c => `${c.id} (${c.name})`).join(", ");
-    
-    const prompt = `Given the list of categories: [${catList}]. 
-    Which category best fits an item named "${name}" with description "${desc}"? 
-    Return ONLY the category ID (e.g., 'raw', 'tool'). Do not add any extra text or markdown.`;
-
+    const prompt = `Given the list of categories: [${catList}]. Which category best fits an item named "${name}" with description "${desc}"? Return ONLY the category ID.`;
     const result = await callGeminiAPI(prompt);
-    
     if (result) {
-        const suggestedId = result.trim().replace(/['"`]/g, ''); // Clean potential quotes
-        // Check if valid
+        const suggestedId = result.trim().replace(/['"`]/g, '');
         const catObj = categories.find(c => c.id === suggestedId);
         if (catObj) {
-            // ATUALIZAÇÃO: Setar valores nos inputs do novo dropdown COM VERIFICAÇÃO
             const hiddenInput = document.getElementById('modal_itemCategory');
             const displayInput = document.getElementById('cat_display_input');
-            
-            if (hiddenInput && displayInput) {
-                hiddenInput.value = suggestedId;
-                displayInput.value = catObj.name;
-                previewPrices(); // Update calc if needed
-                showToast(`Categoria sugerida: ${catObj.name}`);
-            } else {
-                 console.error("Inputs de categoria não encontrados no DOM.");
-            }
-        } else {
-            showToast("IA sugeriu categoria inválida: " + suggestedId);
-        }
+            if (hiddenInput && displayInput) { hiddenInput.value = suggestedId; displayInput.value = catObj.name; previewPrices(); showToast(`Categoria sugerida: ${catObj.name}`); }
+        } else { showToast("IA sugeriu categoria inválida: " + suggestedId); }
     }
-
-    btn.disabled = false;
-    btn.innerText = originalText;
+    btn.disabled = false; btn.innerText = originalText;
 }
 
 async function generateAutoCategoryGlobal(btn) {
     const uncategorizedItems = items.filter(i => !i.cat || i.cat === "");
-    
-    if (uncategorizedItems.length === 0) {
-        showToast(t('toast_no_uncategorized'));
-        return;
-    }
-
+    if (uncategorizedItems.length === 0) { showToast(t('toast_no_uncategorized')); return; }
     if (!confirm(`Deseja categorizar automaticamente ${uncategorizedItems.length} itens sem categoria usando IA? Isso pode levar um tempo.`)) return;
-
-    const originalText = btn.innerText;
-    btn.disabled = true;
-    btn.innerText = "⏳";
-    showToast(t('toast_auto_cat_start'));
-
-    // We process in batches to avoid huge prompts, let's say 10 items at a time
-    const batchSize = 10;
-    const catList = categories.map(c => c.id).join(", ");
-    let processed = 0;
-
+    const originalText = btn.innerText; btn.disabled = true; btn.innerText = "⏳"; showToast(t('toast_auto_cat_start'));
+    const batchSize = 10; const catList = categories.map(c => c.id).join(", "); let processed = 0;
     for (let i = 0; i < uncategorizedItems.length; i += batchSize) {
         const batch = uncategorizedItems.slice(i, i + batchSize);
-        const batchPrompt = `
-        You are a RPG item categorizer.
-        Categories available: [${catList}].
-        Items to categorize:
-        ${batch.map(item => `- ID: "${item.id}", Name: "${item.name}", Desc: "${item.description}"`).join("\n")}
-        
-        Return a JSON object where keys are item IDs and values are the best Category ID. 
-        Example: { "apple": "consumable", "sword": "weapon" }
-        Return ONLY valid JSON.
-        `;
-
+        const batchPrompt = `You are a RPG item categorizer. Categories available: [${catList}]. Items to categorize: ${batch.map(item => `- ID: "${item.id}", Name: "${item.name}", Desc: "${item.description}"`).join("\n")} Return a JSON object where keys are item IDs and values are the best Category ID. Return ONLY valid JSON.`;
         const result = await callGeminiAPI(batchPrompt);
-        
         if (result) {
             try {
                 const cleanJson = result.replace(/```json|```/g, '').trim();
                 const mapping = JSON.parse(cleanJson);
-                
-                // Apply updates
-                Object.keys(mapping).forEach(itemId => {
-                    const item = items.find(it => it.id === itemId);
-                    const newCat = mapping[itemId];
-                    if (item && categories.some(c => c.id === newCat)) {
-                        item.cat = newCat;
-                    }
-                });
+                Object.keys(mapping).forEach(itemId => { const item = items.find(it => it.id === itemId); const newCat = mapping[itemId]; if (item && categories.some(c => c.id === newCat)) { item.cat = newCat; } });
                 processed += batch.length;
-            } catch (e) {
-                console.error("Batch error", e);
-            }
+            } catch (e) { console.error("Batch error", e); }
         }
-        // Small delay to be nice to API
         await new Promise(r => setTimeout(r, 500));
     }
-
-    saveLocalData();
-    renderTable();
-    btn.disabled = false;
-    btn.innerText = originalText;
-    showToast(t('toast_auto_cat_success', processed));
+    saveLocalData(); renderTable(); btn.disabled = false; btn.innerText = originalText; showToast(t('toast_auto_cat_success', processed));
 }
-
-// --- 9. EXPORT & RENDER FRAMEWORK FIELDS ---
 
 function renderFrameworkFields(refreshValues = false) {
     const container = document.getElementById('frameworkFields');
     const framework = globalConfig.framework || 'rsg';
     const index = parseInt(document.getElementById('edit_index').value);
     let fData = (index !== -1 && items[index].frameworkData) ? items[index].frameworkData : {};
-    
     container.innerHTML = '';
-
-    const createCheck = (id, labelKey, checked) => `
-        <div class="form-group" style="margin-bottom:0;">
-            <label style="cursor:pointer; display:flex; align-items:center;">
-                <input type="checkbox" id="fd_${id}" ${checked ? 'checked' : ''} style="width:auto; margin-right:5px;">
-                ${t(labelKey)}
-            </label>
-        </div>`;
-    
-    const createInput = (id, labelKey, value, type="text", placeholder="") => `
-        <div class="form-group" style="margin-bottom:0;">
-            <label>${t(labelKey)}</label>
-            <input type="${type}" id="fd_${id}" value="${value !== undefined ? value : ''}" placeholder="${placeholder}">
-        </div>`;
-
+    const createCheck = (id, labelKey, checked) => `<div class="form-group" style="margin-bottom:0;"><label style="cursor:pointer; display:flex; align-items:center;"><input type="checkbox" id="fd_${id}" ${checked ? 'checked' : ''} style="width:auto; margin-right:5px;">${t(labelKey)}</label></div>`;
+    const createInput = (id, labelKey, value, type="text", placeholder="") => `<div class="form-group" style="margin-bottom:0;"><label>${t(labelKey)}</label><input type="${type}" id="fd_${id}" value="${value !== undefined ? value : ''}" placeholder="${placeholder}"></div>`;
     let html = "";
-
     if (framework === 'rsg') {
-        html += createInput('weight', 'lbl_weight', fData.weight || 0, 'number');
-        html += createInput('type', 'lbl_type', fData.type || 'item');
-        html += createCheck('unique', 'lbl_unique', fData.unique);
-        html += createCheck('useable', 'lbl_usable', fData.useable !== false);
-        // Corrected decay to be an input (can be false or number)
-        html += createInput('decay', 'lbl_decay', fData.decay !== undefined ? fData.decay : '', 'number', '0 = false');
-        html += createCheck('delete', 'lbl_delete', fData.delete);
-        html += createCheck('shouldClose', 'lbl_should_close', fData.shouldClose);
+        html += createInput('weight', 'lbl_weight', fData.weight || 0, 'number'); html += createInput('type', 'lbl_type', fData.type || 'item'); html += createCheck('unique', 'lbl_unique', fData.unique); html += createCheck('useable', 'lbl_usable', fData.useable !== false); html += createInput('decay', 'lbl_decay', fData.decay !== undefined ? fData.decay : '', 'number', '0 = false'); html += createCheck('delete', 'lbl_delete', fData.delete); html += createCheck('shouldClose', 'lbl_should_close', fData.shouldClose);
     } else if (framework === 'vorp') {
-        html += createInput('limit', 'lbl_limit', fData.limit || 10, 'number');
-        html += createInput('weight', 'lbl_weight', fData.weight || 0, 'number'); 
-        html += createInput('type', 'lbl_type', fData.type || 'item_standard');
-        html += createCheck('usable', 'lbl_usable', fData.usable !== false); 
-        html += createCheck('can_remove', 'lbl_can_remove', fData.can_remove !== false);
-        html += createInput('degradation', 'lbl_degradation', fData.degradation || 0, 'number');
-        html += createInput('groupId', 'lbl_group_id', fData.groupId || 1, 'number');
-        html += createInput('dbId', 'lbl_db_id', fData.dbId, 'number', 'Auto/Random');
+        html += createInput('limit', 'lbl_limit', fData.limit || 10, 'number'); html += createInput('weight', 'lbl_weight', fData.weight || 0, 'number'); html += createInput('type', 'lbl_type', fData.type || 'item_standard'); html += createCheck('usable', 'lbl_usable', fData.usable !== false); html += createCheck('can_remove', 'lbl_can_remove', fData.can_remove !== false); html += createInput('degradation', 'lbl_degradation', fData.degradation || 0, 'number'); html += createInput('groupId', 'lbl_group_id', fData.groupId || 1, 'number'); html += createInput('dbId', 'lbl_db_id', fData.dbId, 'number', 'Auto/Random');
     }
-
     container.innerHTML = html;
 }
 
 function getFrameworkDataFromInputs() {
     const framework = globalConfig.framework || 'rsg';
     let data = {};
-    const getVal = (id, type) => {
-        const el = document.getElementById('fd_' + id);
-        if(!el) return null;
-        if(type === 'bool') return el.checked;
-        if(type === 'num') return parseFloat(el.value) || 0;
-        return el.value;
-    };
-
-    if (framework === 'rsg') {
-        data.weight = getVal('weight', 'num');
-        data.type = getVal('type', 'text');
-        data.unique = getVal('unique', 'bool');
-        data.useable = getVal('useable', 'bool');
-        // Capture decay as number (0 if empty/0)
-        data.decay = getVal('decay', 'num');
-        data.delete = getVal('delete', 'bool');
-        data.shouldClose = getVal('shouldClose', 'bool');
-    } else {
-        data.limit = getVal('limit', 'num');
-        data.weight = getVal('weight', 'num');
-        data.type = getVal('type', 'text');
-        data.usable = getVal('usable', 'bool');
-        data.can_remove = getVal('can_remove', 'bool');
-        data.degradation = getVal('degradation', 'num');
-        data.groupId = getVal('groupId', 'num');
-        data.dbId = getVal('dbId', 'num'); 
-    }
+    const getVal = (id, type) => { const el = document.getElementById('fd_' + id); if(!el) return null; if(type === 'bool') return el.checked; if(type === 'num') return parseFloat(el.value) || 0; return el.value; };
+    if (framework === 'rsg') { data.weight = getVal('weight', 'num'); data.type = getVal('type', 'text'); data.unique = getVal('unique', 'bool'); data.useable = getVal('useable', 'bool'); data.decay = getVal('decay', 'num'); data.delete = getVal('delete', 'bool'); data.shouldClose = getVal('shouldClose', 'bool');
+    } else { data.limit = getVal('limit', 'num'); data.weight = getVal('weight', 'num'); data.type = getVal('type', 'text'); data.usable = getVal('usable', 'bool'); data.can_remove = getVal('can_remove', 'bool'); data.degradation = getVal('degradation', 'num'); data.groupId = getVal('groupId', 'num'); data.dbId = getVal('dbId', 'num'); }
     return data;
 }
 
 function exportItemDefinition() {
-    const itemId = document.getElementById('modal_itemId').value.trim();
-    // Raw values
-    const rawName = document.getElementById('modal_itemName').value;
-    const rawDesc = document.getElementById('modal_description').value;
-    const imgName = document.getElementById('modal_imageOverride').value || itemId;
-    
-    // Get current data from inputs, not saved data
-    const fData = getFrameworkDataFromInputs();
-    const framework = globalConfig.framework || 'rsg';
-    
-    let output = "";
-
+    const itemId = document.getElementById('modal_itemId').value.trim(); const rawName = document.getElementById('modal_itemName').value; const rawDesc = document.getElementById('modal_description').value; const imgName = document.getElementById('modal_imageOverride').value || itemId; const fData = getFrameworkDataFromInputs(); const framework = globalConfig.framework || 'rsg'; let output = "";
     if (framework === 'rsg') {
-        // Safe string escaping for Lua (escape backslashes then double quotes)
-        const escapeLua = (str) => (str || "").replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-        const itemName = escapeLua(rawName);
-        const desc = escapeLua(rawDesc);
-        // RSG: Check decay value: if 0 or false -> 'false', else number
-        const decayVal = (fData.decay && fData.decay > 0) ? fData.decay : 'false';
+        const escapeLua = (str) => (str || "").replace(/\\/g, '\\\\').replace(/"/g, '\\"'); const itemName = escapeLua(rawName); const desc = escapeLua(rawDesc); const decayVal = (fData.decay && fData.decay > 0) ? fData.decay : 'false';
         output = `${itemId} = { name = "${itemId}", label = "${itemName}", weight = ${fData.weight}, type = "${fData.type}", image = "${imgName}.png", unique = ${fData.unique}, useable = ${fData.useable}, decay = ${decayVal}, delete = ${fData.delete}, shouldClose = ${fData.shouldClose}, description = "${desc}" },`;
     } else {
-        // VORP: SQL Insert
-        // INSERT INTO `items` (`item`, `label`, `limit`, `can_remove`, `type`, `usable`, `id`, `groupId`, `metadata`, `desc`, `degradation`, `weight`) VALUES ...
-        const itemName = rawName.replace(/'/g, "\\'");
-        const desc = rawDesc.replace(/'/g, "\\'");
-        const dbId = fData.dbId || Math.floor(Math.random() * 10000); // Random if empty for SQL generation purpose
+        const itemName = rawName.replace(/'/g, "\\'"); const desc = rawDesc.replace(/'/g, "\\'"); const dbId = fData.dbId || Math.floor(Math.random() * 10000);
         output = `INSERT INTO \`items\` (\`item\`, \`label\`, \`limit\`, \`can_remove\`, \`type\`, \`usable\`, \`id\`, \`groupId\`, \`metadata\`, \`desc\`, \`degradation\`, \`weight\`) VALUES ('${itemId}', '${itemName}', ${fData.limit}, ${fData.can_remove?1:0}, '${fData.type}', ${fData.usable?1:0}, ${dbId}, ${fData.groupId}, '{}', '${desc}', ${fData.degradation}, ${fData.weight});`;
     }
-
-    const textArea = document.createElement("textarea");
-    textArea.value = output;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textArea);
-    showToast(t('alert_copied'));
+    copyKeysToClipboard([output], true);
 }
 
 function exportAllItemsDefinitions() {
-    const framework = globalConfig.framework || 'rsg';
-    let output = "";
-    
-    if (items.length === 0) {
-        showToast(t('toast_no_export'));
-        return;
-    }
-
+    const framework = globalConfig.framework || 'rsg'; let output = ""; if (items.length === 0) { showToast(t('toast_no_export')); return; }
     if (framework === 'rsg') {
-        output = "RSGShared = RSGShared or {}\nRSGShared.Items = {\n";
-        // Safe string escaping for Lua (escape backslashes then double quotes)
-        const escapeLua = (str) => (str || "").replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-        items.forEach(item => {
-            const fData = item.frameworkData || {};
-            // Defaults
-            const weight = fData.weight || 0;
-            const type = fData.type || 'item';
-            const unique = fData.unique || false;
-            const useable = fData.useable !== false; // default true
-            const shouldClose = fData.shouldClose || false;
-            const del = fData.delete || false;
-            const decay = (fData.decay && fData.decay > 0) ? fData.decay : 'false';
-            const desc = escapeLua(item.description);
-            const label = escapeLua(item.name);
-            const img = (item.imageOverride || item.id) + ".png";
-            
-            output += `    ['${item.id}'] = { name = "${item.id}", label = "${label}", weight = ${weight}, type = "${type}", image = "${img}", unique = ${unique}, useable = ${useable}, decay = ${decay}, delete = ${del}, shouldClose = ${shouldClose}, description = "${desc}" },\n`;
-        });
-        output += "}";
+        output = "RSGShared = RSGShared or {}\nRSGShared.Items = {\n"; const escapeLua = (str) => (str || "").replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        items.forEach(item => { const fData = item.frameworkData || {}; const weight = fData.weight || 0; const type = fData.type || 'item'; const unique = fData.unique || false; const useable = fData.useable !== false; const shouldClose = fData.shouldClose || false; const del = fData.delete || false; const decay = (fData.decay && fData.decay > 0) ? fData.decay : 'false'; const desc = escapeLua(item.description); const label = escapeLua(item.name); const img = (item.imageOverride || item.id) + ".png"; output += `    ['${item.id}'] = { name = "${item.id}", label = "${label}", weight = ${weight}, type = "${type}", image = "${img}", unique = ${unique}, useable = ${useable}, decay = ${decay}, delete = ${del}, shouldClose = ${shouldClose}, description = "${desc}" },\n`; }); output += "}";
     } else {
-        // VORP
-        output = "INSERT INTO `items` (`item`, `label`, `limit`, `can_remove`, `type`, `usable`, `id`, `groupId`, `metadata`, `desc`, `degradation`, `weight`) VALUES \n";
-        const values = [];
-        items.forEach(item => {
-            const fData = item.frameworkData || {};
-            // Defaults
-            const limit = fData.limit || 10;
-            const canRemove = fData.can_remove !== false ? 1 : 0;
-            const type = fData.type || 'item_standard';
-            const usable = fData.usable !== false ? 1 : 0;
-            const dbId = fData.dbId || Math.floor(Math.random() * 100000); // Random ID if missing
-            const groupId = fData.groupId || 1;
-            const deg = fData.degradation || 0;
-            const weight = fData.weight || 0;
-            const desc = (item.description || "").replace(/'/g, "\\'");
-            
-            values.push(`    ('${item.id}', '${item.name.replace(/'/g, "\\'")}', ${limit}, ${canRemove}, '${type}', ${usable}, ${dbId}, ${groupId}, '{}', '${desc}', ${deg}, ${weight})`);
-        });
-        output += values.join(",\n") + ";";
+        output = "INSERT INTO `items` (`item`, `label`, `limit`, `can_remove`, `type`, `usable`, `id`, `groupId`, `metadata`, `desc`, `degradation`, `weight`) VALUES \n"; const values = [];
+        items.forEach(item => { const fData = item.frameworkData || {}; const limit = fData.limit || 10; const canRemove = fData.can_remove !== false ? 1 : 0; const type = fData.type || 'item_standard'; const usable = fData.usable !== false ? 1 : 0; const dbId = fData.dbId || Math.floor(Math.random() * 100000); const groupId = fData.groupId || 1; const deg = fData.degradation || 0; const weight = fData.weight || 0; const desc = (item.description || "").replace(/'/g, "\\'"); values.push(`    ('${item.id}', '${item.name.replace(/'/g, "\\'")}', ${limit}, ${canRemove}, '${type}', ${usable}, ${dbId}, ${groupId}, '{}', '${desc}', ${deg}, ${weight})`); }); output += values.join(",\n") + ";";
     }
-
-    const textArea = document.createElement("textarea");
-    textArea.value = output;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textArea);
-    showToast(t('toast_copied_clipboard', items.length));
+    copyKeysToClipboard([output], true);
 }
 
 function copyAllCraftsDefinitions() {
-    let fullLua = "Config.CraftingRecipes = {\n";
-    let count = 0;
-
+    let fullLua = "Config.CraftingRecipes = {\n"; let count = 0;
     items.forEach(item => {
         if (!item.isCrafted || !item.recipes || item.recipes.length === 0) return;
-
-        const catObj = categories.find(c => c.id === item.cat);
-        const categoryName = catObj ? catObj.name : item.cat;
-        // Safe string escaping for Lua (escape backslashes then double quotes)
-        const description = (item.description || "").replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-
+        const catObj = categories.find(c => c.id === item.cat); const categoryName = catObj ? catObj.name : item.cat; const description = (item.description || "").replace(/\\/g, '\\\\').replace(/"/g, '\\"');
         item.recipes.forEach(recipe => {
-            const rName = recipe.name;
-            // logic for key generation
-            let keyName = item.id;
-            if (item.recipes.length > 1) {
-                const safeName = rName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-                keyName = `${item.id}_${safeName}`;
-            }
-
-            let ingStr = "";
-            if (recipe.ingredients) {
-                recipe.ingredients.forEach(ing => {
-                    if (ing.id) {
-                        ingStr += `\n            { item = "${ing.id}", amount = ${ing.qty}`;
-                        if (ing.returnId && ing.returnQty > 0) {
-                            ingStr += `, returnItem = { item = "${ing.returnId}", amount = ${ing.returnQty} }`;
-                        }
-                        ingStr += ` },`;
-                    }
-                });
-            }
-
-            let toolStr = "";
-            if (recipe.tools) {
-                recipe.tools.forEach(t => {
-                    if (t.id) {
-                        const deg = t.deg || 0;
-                        const qty = t.qty || 1;
-                        toolStr += `\n            { item = "${t.id}", amount = ${qty}, degradation = ${deg} },`;
-                    }
-                });
-            }
-
+            const rName = recipe.name; let keyName = item.id; if (item.recipes.length > 1) { const safeName = rName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(); keyName = `${item.id}_${safeName}`; }
+            let ingStr = ""; if (recipe.ingredients) { recipe.ingredients.forEach(ing => { if (ing.id) { ingStr += `\n            { item = "${ing.id}", amount = ${ing.qty}`; if (ing.returnId && ing.returnQty > 0) { ingStr += `, returnItem = { item = "${ing.returnId}", amount = ${ing.returnQty} }`; } ingStr += ` },`; } }); }
+            let toolStr = ""; if (recipe.tools) { recipe.tools.forEach(t => { if (t.id) { const deg = t.deg || 0; const qty = t.qty || 1; toolStr += `\n            { item = "${t.id}", amount = ${qty}, degradation = ${deg} },`; } }); }
             const rAmount = recipe.amount || 1;
-
-            fullLua += `    ['${keyName}'] = { -- ${item.name} (${rName})
-    craftItem = "${item.id}",
-    amount = ${rAmount},
-    time = ${recipe.time || 0},
-    description = "${description}",
-    category = "${categoryName}",
-    lvlNeed = ${recipe.level || 0},
-    productionQueue = ${recipe.queue},
-    required_items = {${ingStr}
-    },
-    required_tools = {${toolStr}
-    },
-},\n`;
-            count++;
+            fullLua += `    ['${keyName}'] = { -- ${item.name} (${rName})\n    craftItem = "${item.id}",\n    amount = ${rAmount},\n    time = ${recipe.time || 0},\n    description = "${description}",\n    category = "${categoryName}",\n    lvlNeed = ${recipe.level || 0},\n    productionQueue = ${recipe.queue},\n    required_items = {${ingStr}\n    },\n    required_tools = {${toolStr}\n    },\n},\n`; count++;
         });
     });
-
     fullLua += "}";
-
-    if (count === 0) {
-        showToast(t('toast_no_export'));
-        return;
-    }
-
-    const textArea = document.createElement("textarea");
-    textArea.value = fullLua;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textArea);
-    showToast(t('toast_copied_clipboard', count));
+    if (count === 0) { showToast(t('toast_no_export')); return; }
+    copyKeysToClipboard([fullLua], true);
 }
 
-function openImportModal() { importModal.style.display = "block"; }
-function closeImportModal() { importModal.style.display = "none"; document.getElementById('importContent').value = ''; }
-function processImport() {
-    const type = document.getElementById('importType').value;
-    const content = document.getElementById('importContent').value;
-    let importedCount = 0; let skippedCount = 0;
-    
-    if (type === 'rsg') {
-        const regex = /(\w+)\s*=\s*\{([^}]+)\}/g;
-        let match;
-        while ((match = regex.exec(content)) !== null) {
-            const key = match[1]; const body = match[2];
-            // Improved regex for name/label/desc to handle escaped quotes inside
-            const nameMatch = body.match(/name\s*=\s*(['"])((?:\\\1|.)*?)\1/);
-            const labelMatch = body.match(/label\s*=\s*(['"])((?:\\\1|.)*?)\1/);
-            const descMatch = body.match(/description\s*=\s*(['"])((?:\\\1|[\s\S])*?)\1/);
-            const imgMatch = body.match(/image\s*=\s*(['"])((?:\\\1|.)*?)\1/);
-            
-            // Extract RSG specific fields
-            const weightMatch = body.match(/weight\s*=\s*(\d+)/);
-            const typeMatch = body.match(/type\s*=\s*(['"])((?:\\\1|.)*?)\1/);
-            const uniqueMatch = body.match(/unique\s*=\s*(true|false)/);
-            const useableMatch = body.match(/useable\s*=\s*(true|false)/);
-            const shouldCloseMatch = body.match(/shouldClose\s*=\s*(true|false)/);
-            const deleteMatch = body.match(/delete\s*=\s*(true|false)/);
-            // Decay can be false or number
-            const decayMatch = body.match(/decay\s*=\s*([a-zA-Z0-9\.]+)/); 
-
-            const id = nameMatch ? nameMatch[2] : key; 
-            if (items.find(i => i.id === id)) { skippedCount++; continue; }
-            
-            let decayVal = 0;
-            if(decayMatch && decayMatch[1] !== 'false') {
-                decayVal = parseFloat(decayMatch[1]) || 0;
-            }
-
-            const fData = {
-                weight: weightMatch ? parseInt(weightMatch[1]) : 0,
-                type: typeMatch ? typeMatch[2] : 'item',
-                unique: uniqueMatch ? uniqueMatch[1] === 'true' : false,
-                useable: useableMatch ? useableMatch[1] === 'true' : false,
-                shouldClose: shouldCloseMatch ? shouldCloseMatch[1] === 'true' : false,
-                delete: deleteMatch ? deleteMatch[1] === 'true' : false,
-                decay: decayVal
-            };
-
-            items.push({ 
-                id: id, 
-                name: labelMatch ? labelMatch[2].replace(/\\(['"])/g, '$1') : id, 
-                cat: '', 
-                description: descMatch ? descMatch[2].replace(/\\(['"])/g, '$1') : '', 
-                imageOverride: imgMatch ? imgMatch[2].replace('.png','').replace(/\\(['"])/g, '$1') : '', 
-                isCrafted: false, 
-                cost: 0, 
-                recipes: [], 
-                frameworkData: fData 
-            });
-            importedCount++;
-        }
-    } else if (type === 'vorp') {
-        let cleanContent = content.replace(/INSERT\s+INTO.*VALUES\s*/i, '').trim();
-        if(cleanContent.endsWith(';')) cleanContent = cleanContent.slice(0, -1);
-        
-        // Need to identify column order if possible, but regex based on example for now.
-        // Simplified SQL parser based on VALUES list assuming standard order from example
-        // `item`, `label`, `limit`, `can_remove`, `type`, `usable`, `id`, `groupId`, `metadata`, `desc`, `degradation`, `weight`
-        
-        const rows = cleanContent.split(/\),\s*\(/);
-        rows.forEach(row => {
-            let cleanRow = row.replace(/^\(/, '').replace(/\)$/, '');
-            // Matches 'string' or number
-            const parts = cleanRow.match(/(".*?"|'.*?'|[^",\s]+)(?=\s*,|\s*$)/g);
-            
-            if(parts && parts.length >= 2) {
-                const id = parts[0].replace(/'/g, "").replace(/"/g, ""); 
-                const label = parts[1].replace(/'/g, "").replace(/"/g, "");
-                
-                // Assuming example structure:
-                // 0:item, 1:label, 2:limit, 3:can_remove, 4:type, 5:usable, 6:id, 7:groupId, 8:meta, 9:desc, 10:deg, 11:weight
-                
-                const limit = parts[2] ? parseInt(parts[2]) : 10;
-                const canRemove = parts[3] ? parts[3] == '1' : true;
-                const iType = parts[4] ? parts[4].replace(/'/g, "") : 'item_standard';
-                const usable = parts[5] ? parts[5] == '1' : true;
-                const dbId = parts[6] ? parseInt(parts[6]) : 0;
-                const groupId = parts[7] ? parseInt(parts[7]) : 0;
-                let desc = ""; 
-                if(parts[9]) desc = parts[9].replace(/'/g, "");
-                const deg = parts[10] ? parseFloat(parts[10]) : 0;
-                const weight = parts[11] ? parseFloat(parts[11]) : 0;
-
-                if (items.find(i => i.id === id)) { skippedCount++; return; }
-                
-                const fData = {
-                    limit: limit, can_remove: canRemove, type: iType, usable: usable,
-                    dbId: dbId, groupId: groupId, degradation: deg, weight: weight
-                };
-
-                items.push({ 
-                    id: id, name: label, cat: '', description: desc, 
-                    imageOverride: '', isCrafted: false, cost: 0, recipes: [], 
-                    frameworkData: fData 
-                });
-                importedCount++;
-            }
-        });
-    }
-    saveLocalData();
-    renderTable(); closeImportModal(); showToast(t('import_success', importedCount, skippedCount));
-}
-
-function copyCategoryCrafts(index) {
-    const catId = categories[index].id; let keys = [];
-    items.forEach(item => {
-        if (item.cat === catId && item.isCrafted) {
-            if (item.recipes && item.recipes.length > 1) {
-                item.recipes.forEach(recipe => { const safeName = recipe.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(); keys.push(`${item.id}_${safeName}`); });
-            } else if (item.recipes && item.recipes.length === 1) { keys.push(item.id); }
-        }
-    });
-    copyKeysToClipboard(keys);
-}
-
-function copyTableCrafts(index) {
-    const tableId = craftingTables[index].id; let keys = [];
-    items.forEach(item => {
-        if (item.isCrafted && item.recipes) {
-            item.recipes.forEach(recipe => {
-                if (recipe.tables && recipe.tables.includes(tableId)) {
-                    if (item.recipes.length > 1) { const safeName = recipe.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(); keys.push(`${item.id}_${safeName}`); } 
-                    else { keys.push(item.id); }
-                }
-            });
-        }
-    });
-    copyKeysToClipboard(keys);
-}
-
-function copyKeysToClipboard(keys) {
+function copyKeysToClipboard(keys, isRawContent=false) {
     if (!keys || keys.length === 0) { showToast(t('toast_no_export')); return; }
-    const formatted = `{'${keys.join("', '")}'}`;
+    const formatted = isRawContent ? keys[0] : `{'${keys.join("', '")}'}`;
     const textArea = document.createElement("textarea"); textArea.value = formatted; document.body.appendChild(textArea); textArea.select(); document.execCommand("copy"); document.body.removeChild(textArea);
     showToast(t('alert_copied'));
 }
 
 function exportLua() {
-    const itemId = document.getElementById('modal_itemId').value.trim();
-    const itemName = document.getElementById('modal_itemName').value;
-    const catId = document.getElementById('modal_itemCategory').value;
-    const catObj = categories.find(c => c.id === catId);
-    const categoryName = catObj ? catObj.name : catId;
-    const description = document.getElementById('modal_description').value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-
-    if (!document.getElementById('modal_isCrafted').checked) {
-        alert(t('alert_not_craftable'));
-        return;
-    }
-
-    const recipeCards = document.querySelectorAll('.recipe-card');
-    if (recipeCards.length === 0) {
-        alert(t('alert_add_variant'));
-        return;
-    }
-
+    const itemId = document.getElementById('modal_itemId').value.trim(); const itemName = document.getElementById('modal_itemName').value; const catId = document.getElementById('modal_itemCategory').value; const catObj = categories.find(c => c.id === catId); const categoryName = catObj ? catObj.name : catId; const description = document.getElementById('modal_description').value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    if (!document.getElementById('modal_isCrafted').checked) { alert(t('alert_not_craftable')); return; }
+    const recipeCards = document.querySelectorAll('.recipe-card'); if (recipeCards.length === 0) { alert(t('alert_add_variant')); return; }
     let luaOutput = "";
-
     recipeCards.forEach((card, index) => {
-        const rName = card.querySelector('.r-name').value.trim();
-        const rTime = parseInt(card.querySelector('.r-time').value) || 0;
-        const rLevel = parseInt(card.querySelector('.r-level').value) || 0;
-        const rQueue = card.querySelector('.r-queue').checked;
-        const rAmount = parseFloat(card.querySelector('.r-amount').value) || 1;
-        
-        let keyName = itemId;
-        if (recipeCards.length > 1) {
-            const safeName = rName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-            keyName = `${itemId}_${safeName}`;
-        }
-
-        let ingStr = "";
-        card.querySelectorAll('.ingredient-row').forEach(r => {
-            const hiddenInput = r.querySelector('.ing-id');
-            const id = hiddenInput ? hiddenInput.value : '';
-            const qty = r.querySelector('.ing-qty').value;
-            const retHidden = r.querySelector('.ing-ret-id');
-            const retId = retHidden ? retHidden.value : '';
-            const retQty = r.querySelector('.ing-ret-qty').value;
-
-            if(id) {
-                ingStr += `\n            { item = "${id}", amount = ${qty}`;
-                if(retId && retQty > 0) {
-                    ingStr += `, returnItem = { item = "${retId}", amount = ${retQty} }`;
-                }
-                ingStr += ` },`;
-            }
-        });
-
-        let toolStr = "";
-        card.querySelectorAll('.tool-row').forEach(r => {
-            const hiddenInput = r.querySelector('.tool-id');
-            const id = hiddenInput ? hiddenInput.value : '';
-            const qty = r.querySelector('.tool-qty').value || 1;
-            const deg = r.querySelector('.tool-deg').value || 0;
-            if(id) {
-                toolStr += `\n            { item = "${id}", amount = ${qty}, degradation = ${deg} },`;
-            }
-        });
-
-        luaOutput += `    ['${keyName}'] = { -- ${itemName} (${rName})
-    craftItem = "${itemId}",
-    amount = ${rAmount},
-    time = ${rTime},
-    description = "${description}",
-    category = "${categoryName}",
-    lvlNeed = ${rLevel},
-    productionQueue = ${rQueue},
-    required_items = {${ingStr}
-    },
-    required_tools = {${toolStr}
-    },
-},\n`;
+        const rName = card.querySelector('.r-name').value.trim(); const rTime = parseInt(card.querySelector('.r-time').value) || 0; const rLevel = parseInt(card.querySelector('.r-level').value) || 0; const rQueue = card.querySelector('.r-queue').checked; const rAmount = parseFloat(card.querySelector('.r-amount').value) || 1;
+        let keyName = itemId; if (recipeCards.length > 1) { const safeName = rName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(); keyName = `${itemId}_${safeName}`; }
+        let ingStr = ""; card.querySelectorAll('.ingredient-row').forEach(r => { const hiddenInput = r.querySelector('.ing-id'); const id = hiddenInput ? hiddenInput.value : ''; const qty = r.querySelector('.ing-qty').value; const retHidden = r.querySelector('.ing-ret-id'); const retId = retHidden ? retHidden.value : ''; const retQty = r.querySelector('.ing-ret-qty').value; if(id) { ingStr += `\n            { item = "${id}", amount = ${qty}`; if(retId && retQty > 0) { ingStr += `, returnItem = { item = "${retId}", amount = ${retQty} }`; } ingStr += ` },`; } });
+        let toolStr = ""; card.querySelectorAll('.tool-row').forEach(r => { const hiddenInput = r.querySelector('.tool-id'); const id = hiddenInput ? hiddenInput.value : ''; const qty = r.querySelector('.tool-qty').value || 1; const deg = r.querySelector('.tool-deg').value || 0; if(id) { toolStr += `\n            { item = "${id}", amount = ${qty}, degradation = ${deg} },`; } });
+        luaOutput += `    ['${keyName}'] = { -- ${itemName} (${rName})\n    craftItem = "${itemId}",\n    amount = ${rAmount},\n    time = ${rTime},\n    description = "${description}",\n    category = "${categoryName}",\n    lvlNeed = ${rLevel},\n    productionQueue = ${rQueue},\n    required_items = {${ingStr}\n    },\n    required_tools = {${toolStr}\n    },\n},\n`;
     });
+    copyKeysToClipboard([luaOutput], true);
+}
 
-    const textArea = document.createElement("textarea");
-    textArea.value = luaOutput;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textArea);
-    showToast(t('alert_copied'));
+function openImportModal() { importModal.style.display = "block"; }
+function closeImportModal() { importModal.style.display = "none"; document.getElementById('importContent').value = ''; }
+function processImport() {
+    const type = document.getElementById('importType').value; const content = document.getElementById('importContent').value; let importedCount = 0; let skippedCount = 0;
+    if (type === 'rsg') {
+        const regex = /(\w+)\s*=\s*\{([^}]+)\}/g; let match;
+        while ((match = regex.exec(content)) !== null) {
+            const key = match[1]; const body = match[2]; const nameMatch = body.match(/name\s*=\s*(['"])((?:\\\1|.)*?)\1/); const labelMatch = body.match(/label\s*=\s*(['"])((?:\\\1|.)*?)\1/); const descMatch = body.match(/description\s*=\s*(['"])((?:\\\1|[\s\S])*?)\1/); const imgMatch = body.match(/image\s*=\s*(['"])((?:\\\1|.)*?)\1/);
+            const weightMatch = body.match(/weight\s*=\s*(\d+)/); const typeMatch = body.match(/type\s*=\s*(['"])((?:\\\1|.)*?)\1/); const uniqueMatch = body.match(/unique\s*=\s*(true|false)/); const useableMatch = body.match(/useable\s*=\s*(true|false)/); const shouldCloseMatch = body.match(/shouldClose\s*=\s*(true|false)/); const deleteMatch = body.match(/delete\s*=\s*(true|false)/); const decayMatch = body.match(/decay\s*=\s*([a-zA-Z0-9\.]+)/);
+            const id = nameMatch ? nameMatch[2] : key; if (items.find(i => i.id === id)) { skippedCount++; continue; }
+            let decayVal = 0; if(decayMatch && decayMatch[1] !== 'false') { decayVal = parseFloat(decayMatch[1]) || 0; }
+            const fData = { weight: weightMatch ? parseInt(weightMatch[1]) : 0, type: typeMatch ? typeMatch[2] : 'item', unique: uniqueMatch ? uniqueMatch[1] === 'true' : false, useable: useableMatch ? useableMatch[1] === 'true' : false, shouldClose: shouldCloseMatch ? shouldCloseMatch[1] === 'true' : false, delete: deleteMatch ? deleteMatch[1] === 'true' : false, decay: decayVal };
+            items.push({ id: id, name: labelMatch ? labelMatch[2].replace(/\\(['"])/g, '$1') : id, cat: '', description: descMatch ? descMatch[2].replace(/\\(['"])/g, '$1') : '', imageOverride: imgMatch ? imgMatch[2].replace('.png','').replace(/\\(['"])/g, '$1') : '', isCrafted: false, cost: 0, recipes: [], frameworkData: fData }); importedCount++;
+        }
+    } else if (type === 'vorp') {
+        let cleanContent = content.replace(/INSERT\s+INTO.*VALUES\s*/i, '').trim(); if(cleanContent.endsWith(';')) cleanContent = cleanContent.slice(0, -1); const rows = cleanContent.split(/\),\s*\(/);
+        rows.forEach(row => {
+            let cleanRow = row.replace(/^\(/, '').replace(/\)$/, ''); const parts = cleanRow.match(/(".*?"|'.*?'|[^",\s]+)(?=\s*,|\s*$)/g);
+            if(parts && parts.length >= 2) {
+                const id = parts[0].replace(/'/g, "").replace(/"/g, ""); const label = parts[1].replace(/'/g, "").replace(/"/g, ""); const limit = parts[2] ? parseInt(parts[2]) : 10; const canRemove = parts[3] ? parts[3] == '1' : true; const iType = parts[4] ? parts[4].replace(/'/g, "") : 'item_standard'; const usable = parts[5] ? parts[5] == '1' : true; const dbId = parts[6] ? parseInt(parts[6]) : 0; const groupId = parts[7] ? parseInt(parts[7]) : 0; let desc = ""; if(parts[9]) desc = parts[9].replace(/'/g, ""); const deg = parts[10] ? parseFloat(parts[10]) : 0; const weight = parts[11] ? parseFloat(parts[11]) : 0;
+                if (items.find(i => i.id === id)) { skippedCount++; return; }
+                const fData = { limit: limit, can_remove: canRemove, type: iType, usable: usable, dbId: dbId, groupId: groupId, degradation: deg, weight: weight };
+                items.push({ id: id, name: label, cat: '', description: desc, imageOverride: '', isCrafted: false, cost: 0, recipes: [], frameworkData: fData }); importedCount++;
+            }
+        });
+    }
+    saveLocalData(); renderTable(); closeImportModal(); showToast(t('import_success', importedCount, skippedCount));
+}
+
+function copyCategoryCrafts(index) {
+    const catId = categories[index].id; let keys = [];
+    items.forEach(item => { if (item.cat === catId && item.isCrafted) { if (item.recipes && item.recipes.length > 1) { item.recipes.forEach(recipe => { const safeName = recipe.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(); keys.push(`${item.id}_${safeName}`); }); } else if (item.recipes && item.recipes.length === 1) { keys.push(item.id); } } }); copyKeysToClipboard(keys);
+}
+function copyTableCrafts(index) {
+    const tableId = craftingTables[index].id; let keys = [];
+    items.forEach(item => { if (item.isCrafted && item.recipes) { item.recipes.forEach(recipe => { if (recipe.tables && recipe.tables.includes(tableId)) { if (item.recipes.length > 1) { const safeName = recipe.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(); keys.push(`${item.id}_${safeName}`); } else { keys.push(item.id); } } }); } }); copyKeysToClipboard(keys);
 }
 
 // --- 7. MODAL & DELETION FUNCTIONS ---
@@ -1250,97 +838,50 @@ function openModal(mode, index = -1) {
     form.reset();
     document.getElementById('recipesContainer').innerHTML = '';
     document.getElementById('edit_index').value = index;
-    
-    // Configurar valores iniciais
     let initialCatId = "";
 
     if (mode === 'create') {
-        document.getElementById('modalTitle').innerText = t('modal_manage_title'); 
-        document.getElementById('modal_itemId').disabled = false;
-        document.getElementById('modal_itemId').value = '';
-        toggleCraftMode(); 
+        document.getElementById('modalTitle').innerText = t('modal_manage_title'); document.getElementById('modal_itemId').disabled = false; document.getElementById('modal_itemId').value = ''; toggleCraftMode(); 
     } else if (mode === 'edit') {
         const item = items[index];
-        document.getElementById('modalTitle').innerText = t('modal_manage_title') + ': ' + item.name;
-        document.getElementById('modal_itemId').value = item.id;
-        document.getElementById('modal_itemId').disabled = true;
-        document.getElementById('modal_itemName').value = item.name;
-        
-        // Salvar ID da categoria para renderizar o dropdown depois
-        initialCatId = item.cat;
-        
-        document.getElementById('modal_description').value = item.description || "";
-        document.getElementById('modal_imageOverride').value = item.imageOverride || "";
-        document.getElementById('modal_isCrafted').checked = item.isCrafted;
-        
-        const isCrafted = item.isCrafted;
-        document.getElementById('modal_craftingSection').style.display = isCrafted ? 'block' : 'none';
-        document.getElementById('modal_costPrice').disabled = isCrafted;
-        
-        if (isCrafted) {
-            document.getElementById('modal_costPrice').value = '';
-            document.getElementById('modal_costPrice').placeholder = t('ph_auto');
-            if (item.recipes && item.recipes.length > 0) {
-                item.recipes.forEach(recipe => addRecipeCard(recipe));
-            } else {
-                addRecipeCard();
-            }
-        } else {
-            document.getElementById('modal_costPrice').value = item.cost;
-            document.getElementById('modal_costPrice').placeholder = '0.00';
-        }
+        document.getElementById('modalTitle').innerText = t('modal_manage_title') + ': ' + item.name; document.getElementById('modal_itemId').value = item.id; document.getElementById('modal_itemId').disabled = true; document.getElementById('modal_itemName').value = item.name; initialCatId = item.cat; document.getElementById('modal_description').value = item.description || ""; document.getElementById('modal_imageOverride').value = item.imageOverride || ""; document.getElementById('modal_isCrafted').checked = item.isCrafted;
+        const isCrafted = item.isCrafted; document.getElementById('modal_craftingSection').style.display = isCrafted ? 'block' : 'none'; document.getElementById('modal_costPrice').disabled = isCrafted;
+        if (isCrafted) { document.getElementById('modal_costPrice').value = ''; document.getElementById('modal_costPrice').placeholder = t('ph_auto'); if (item.recipes && item.recipes.length > 0) { item.recipes.forEach(recipe => addRecipeCard(recipe)); } else { addRecipeCard(); } } else { document.getElementById('modal_costPrice').value = item.cost; document.getElementById('modal_costPrice').placeholder = '0.00'; }
     }
-    
-    // ATUALIZAÇÃO AQUI: Renderizar o dropdown de categorias no lugar do select
-    const dropdownContainer = document.getElementById('categoryDropdownContainer');
-    if (dropdownContainer) {
-        dropdownContainer.innerHTML = renderCategorySearchDropdown(initialCatId);
-    }
-
-    renderFrameworkFields();
-    previewPrices();
-    modal.style.display = "block";
+    const dropdownContainer = document.getElementById('categoryDropdownContainer'); if (dropdownContainer) { dropdownContainer.innerHTML = renderCategorySearchDropdown(initialCatId); }
+    renderFrameworkFields(); previewPrices(); modal.style.display = "block";
 }
 
 function closeModal() { modal.style.display = "none"; }
 
 function openDeleteModal(type, index) { 
-    itemToDeleteIndex = index; 
-    deleteTargetType = type;
-    let name = "";
-    let msg = "";
+    itemToDeleteIndex = index; deleteTargetType = type;
+    let name = ""; let msg = "";
+    if(type === 'item') { name = items[index].name; msg = t('delete_msg_item'); } 
+    else if(type === 'category') { name = categories[index].name; msg = t('delete_msg_cat'); } 
+    else if(type === 'table') { name = craftingTables[index].name; msg = t('delete_msg_table'); }
+    else if(type === 'tier') { name = jobTiers[index].name; msg = t('delete_msg_tier'); }
+    else if(type === 'job') { const job = jobs.find(j => j.id === index); name = job ? job.name : ''; msg = t('delete_msg_job'); } // Index passed for job is ID
 
-    if(type === 'item') {
-        name = items[index].name;
-        msg = t('delete_msg_item');
-    } else if(type === 'category') {
-        name = categories[index].name;
-        msg = t('delete_msg_cat');
-    } else if(type === 'table') {
-        name = craftingTables[index].name;
-        msg = t('delete_msg_table');
-    }
-
-    document.getElementById('deleteItemName').innerText = name; 
-    document.getElementById('deleteMsg').innerText = msg;
-    deleteModal.style.display = "block"; 
+    document.getElementById('deleteItemName').innerText = name; document.getElementById('deleteMsg').innerText = msg; deleteModal.style.display = "block"; 
 }
 
 function closeDeleteModal() { deleteModal.style.display = "none"; itemToDeleteIndex = -1; deleteTargetType = null; }
 
 function confirmDelete() { 
-    if (itemToDeleteIndex > -1) { 
-        if (deleteTargetType === 'item') {
-            items.splice(itemToDeleteIndex, 1); 
-            renderTable();
-        } else if (deleteTargetType === 'category') {
-            categories.splice(itemToDeleteIndex, 1);
-            renderCategories();
-            populateCategorySelects();
-            updateCalculations();
-        } else if (deleteTargetType === 'table') {
-            craftingTables.splice(itemToDeleteIndex, 1);
-            renderCraftingTables();
+    if (itemToDeleteIndex !== -1) { 
+        if (deleteTargetType === 'item') { items.splice(itemToDeleteIndex, 1); renderTable(); } 
+        else if (deleteTargetType === 'category') { categories.splice(itemToDeleteIndex, 1); renderCategories(); } 
+        else if (deleteTargetType === 'table') { craftingTables.splice(itemToDeleteIndex, 1); renderCraftingTables(); }
+        else if (deleteTargetType === 'tier') { 
+            const tierId = jobTiers[itemToDeleteIndex].id;
+            jobs = jobs.filter(j => j.tierId !== tierId);
+            jobTiers.splice(itemToDeleteIndex, 1); 
+            if(typeof renderJobKanban === 'function') renderJobKanban();
+        }
+        else if (deleteTargetType === 'job') {
+            jobs = jobs.filter(j => j.id !== itemToDeleteIndex); 
+            if(typeof renderJobKanban === 'function') renderJobKanban();
         }
         saveLocalData();
     } 
@@ -1351,70 +892,31 @@ function toggleCraftMode() {
     const isCrafted = document.getElementById('modal_isCrafted').checked;
     document.getElementById('modal_craftingSection').style.display = isCrafted ? 'block' : 'none';
     document.getElementById('modal_costPrice').disabled = isCrafted;
-    if(isCrafted && document.getElementById('recipesContainer').children.length === 0) { 
-        if (typeof addRecipeCard === "function") {
-            addRecipeCard(); 
-        }
-    }
-    if(isCrafted) { document.getElementById('modal_costPrice').value = ''; document.getElementById('modal_costPrice').placeholder = t('ph_auto'); } 
-    else { document.getElementById('modal_costPrice').placeholder = '0.00'; }
+    if(isCrafted && document.getElementById('recipesContainer').children.length === 0) { if (typeof addRecipeCard === "function") { addRecipeCard(); } }
+    if(isCrafted) { document.getElementById('modal_costPrice').value = ''; document.getElementById('modal_costPrice').placeholder = t('ph_auto'); } else { document.getElementById('modal_costPrice').placeholder = '0.00'; }
     previewPrices();
 }
 
 document.getElementById('itemForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const index = parseInt(document.getElementById('edit_index').value);
-    const itemId = document.getElementById('modal_itemId').value;
+    const index = parseInt(document.getElementById('edit_index').value); const itemId = document.getElementById('modal_itemId').value;
     if (index === -1 && items.find(i => i.id === itemId)) { alert(t('alert_id_exists')); return; }
     
-    const isCrafted = document.getElementById('modal_isCrafted').checked;
-    let recipes = [];
+    const isCrafted = document.getElementById('modal_isCrafted').checked; let recipes = [];
     if(isCrafted) {
         document.querySelectorAll('.recipe-card').forEach(card => {
             let ingredients = [], tools = [], tables = [];
             card.querySelectorAll('.table-checkbox:checked').forEach(cb => tables.push(cb.value));
-            card.querySelectorAll('.ingredient-row').forEach(r => {
-                const hiddenInput = r.querySelector('.ing-id');
-                const retHidden = r.querySelector('.ing-ret-id');
-                ingredients.push({ 
-                    id: hiddenInput ? hiddenInput.value : '', 
-                    qty: parseFloat(r.querySelector('.ing-qty').value), 
-                    returnId: retHidden ? retHidden.value : '', 
-                    returnQty: parseFloat(r.querySelector('.ing-ret-qty').value) || 0 
-                });
-            });
-            card.querySelectorAll('.tool-row').forEach(r => {
-                const hiddenInput = r.querySelector('.tool-id');
-                tools.push({ 
-                    id: hiddenInput ? hiddenInput.value : '', 
-                    qty: parseFloat(r.querySelector('.tool-qty').value)||1, 
-                    deg: parseFloat(r.querySelector('.tool-deg').value) 
-                });
-            });
-            recipes.push({
-                name: card.querySelector('.r-name').value || "Variante", 
-                time: parseInt(card.querySelector('.r-time').value) || 0, 
-                level: parseInt(card.querySelector('.r-level').value) || 0,
-                amount: parseFloat(card.querySelector('.r-amount').value) || 1,
-                queue: card.querySelector('.r-queue').checked, tables: tables, ingredients: ingredients, tools: tools
-            });
+            card.querySelectorAll('.ingredient-row').forEach(r => { const hiddenInput = r.querySelector('.ing-id'); const retHidden = r.querySelector('.ing-ret-id'); ingredients.push({ id: hiddenInput ? hiddenInput.value : '', qty: parseFloat(r.querySelector('.ing-qty').value), returnId: retHidden ? retHidden.value : '', returnQty: parseFloat(r.querySelector('.ing-ret-qty').value) || 0 }); });
+            card.querySelectorAll('.tool-row').forEach(r => { const hiddenInput = r.querySelector('.tool-id'); tools.push({ id: hiddenInput ? hiddenInput.value : '', qty: parseFloat(r.querySelector('.tool-qty').value)||1, deg: parseFloat(r.querySelector('.tool-deg').value) }); });
+            recipes.push({ name: card.querySelector('.r-name').value || "Variante", time: parseInt(card.querySelector('.r-time').value) || 0, level: parseInt(card.querySelector('.r-level').value) || 0, amount: parseFloat(card.querySelector('.r-amount').value) || 1, queue: card.querySelector('.r-queue').checked, tables: tables, ingredients: ingredients, tools: tools });
         });
     }
-    
-    const frameworkData = getFrameworkDataFromInputs();
-
-    // ATUALIZAÇÃO: Pegar valor do input hidden 'modal_itemCategory' (mesmo ID, agora hidden)
-    const catId = document.getElementById('modal_itemCategory').value;
-
-    const itemData = {
-        id: itemId, name: document.getElementById('modal_itemName').value, cat: catId,
-        description: document.getElementById('modal_description').value, imageOverride: document.getElementById('modal_imageOverride').value,
-        isCrafted: isCrafted, cost: parseFloat(document.getElementById('modal_costPrice').value) || 0, recipes: recipes,
-        frameworkData: frameworkData 
-    };
+    const frameworkData = getFrameworkDataFromInputs(); const catId = document.getElementById('modal_itemCategory').value;
+    const itemData = { id: itemId, name: document.getElementById('modal_itemName').value, cat: catId, description: document.getElementById('modal_description').value, imageOverride: document.getElementById('modal_imageOverride').value, isCrafted: isCrafted, cost: parseFloat(document.getElementById('modal_costPrice').value) || 0, recipes: recipes, frameworkData: frameworkData };
     if (index === -1) items.push(itemData); else items[index] = itemData;
-    saveLocalData();
-    closeModal(); renderTable();
+    saveLocalData(); closeModal(); renderTable(); 
+    if(typeof calculateJobGains === 'function') calculateJobGains(); // Re-calc jobs
 });
 
 // --- 8. INITIALIZATION ---
@@ -1423,13 +925,16 @@ window.onload = function() {
     deleteModal = document.getElementById("deleteModal");
     importModal = document.getElementById("importModal");
     inputModal = document.getElementById("inputModal");
+    jobModal = document.getElementById("jobModal"); // Init Job Modal
     
     loadLocalData(); 
     
     renderCategories();
     renderCraftingTables();
-    // populateCategorySelects(); // Não é mais necessário no onload para o modal principal
     renderTable();
+    
+    // Attempt to init Kanban if loaded
+    if(typeof renderJobKanban === 'function') renderJobKanban();
     
     setLanguage(currentLang); 
     apiKey = localStorage.getItem('redm_economy_apikey') || "";
@@ -1439,8 +944,10 @@ window.onload = function() {
 function clearAllItems() {
     if (confirm(t('confirm_clear_all'))) {
         items = [];
+        jobs = [];
         saveLocalData();
         renderTable();
+        if(typeof renderJobKanban === 'function') renderJobKanban();
         showToast(t('toast_cleared'));
     }
 }
@@ -1450,4 +957,5 @@ window.onclick = function(event) {
     if (deleteModal && event.target == deleteModal) closeDeleteModal();
     if (importModal && event.target == importModal) closeImportModal();
     if (inputModal && event.target == inputModal) closeInputModal();
+    if (jobModal && event.target == jobModal && typeof closeJobModal === 'function') closeJobModal();
 }
