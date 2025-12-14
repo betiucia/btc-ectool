@@ -12,6 +12,8 @@
 <body>
     <div id="toast" class="toast">Dados copiados!</div>
 
+    <input type="file" id="globalAssetFileInput" accept="image/*" style="display:none;" onchange="handleGlobalAssetFileSelect(this)">
+
     <div class="tab-nav">
         <button class="tab-btn active" onclick="openTab('items', this)" data-lang="registered_items">Itens Cadastrados</button>
         <button class="tab-btn" onclick="openTab('jobs', this)" data-lang="tab_jobs">Empregos (Jobs)</button>
@@ -304,17 +306,36 @@
                         <label data-lang="lbl_direct_gain" data-lang-title="tip_job_money">Ganho Monetário Direto ($)</label>
                         <input type="number" id="job_money" step="0.01" value="0" placeholder="0.00" onchange="calculateJobGains()">
                     </div>
+                    
                     <div style="margin-top:15px; border-top:1px dashed var(--cor-borda-fraca); padding-top:10px;">
                         <label style="margin-bottom:10px;" data-lang="lbl_items_gain" data-lang-title="tip_job_items">Ganho em Itens (Farm)</label>
+                        
+                        <div class="job-table-header job-row-grid-items">
+                             <span data-lang="col_item">Item</span>
+                             <span data-lang="ph_qty">Qtd</span>
+                             <span></span>
+                        </div>
+
                         <div id="jobItemsContainer" class="job-items-table-container"></div>
                         <button type="button" class="btn btn-secondary btn-small" onclick="addJobItemRow()" data-lang="btn_add_item_row">+ Item Farmado</button>
                     </div>
+
                     <div style="margin-top:15px; border-top:1px dashed var(--cor-borda-fraca); padding-top:10px;">
                         <label style="margin-bottom:10px; color: var(--cor-erro);" data-lang="lbl_expenses" data-lang-title="tip_job_tools">Custos / Ferramentas Usadas</label>
+                        
+                        <div class="job-table-header job-row-grid-tools">
+                            <span data-lang="col_item">Item</span>
+                            <span data-lang="ph_qty">Qtd</span>
+                            <span data-lang="lbl_degradation_short" data-lang-title="lbl_degradation">Deg%</span>
+                            <span data-lang="lbl_consumed" data-lang-title="tip_consumed">Consumido?</span>
+                            <span></span>
+                        </div>
+
                         <div id="jobToolsContainer" class="job-items-table-container" style="border-color: var(--cor-erro-borda);"></div>
                         <button type="button" class="btn btn-secondary btn-small" onclick="addJobToolRow()" style="border-color:var(--cor-erro); color:var(--cor-texto-principal);" data-lang="btn_add_tool_row">+ Ferramenta</button>
                     </div>
                 </div>
+                
                 <div class="job-calc-summary-detailed">
                     <div class="summary-row"><span data-lang="lbl_gross">Bruto (Sessão)</span><span id="summary_gross" class="val-gross">$ 0.00</span></div>
                     <div class="summary-row"><span data-lang="lbl_costs">Custos (Sessão)</span><span id="summary_cost" class="val-cost">- $ 0.00</span></div>
@@ -336,19 +357,16 @@
             <form id="assetForm">
                 <input type="hidden" id="asset_edit_id">
                 <input type="hidden" id="asset_cat_id">
-
                 <div class="form-group">
                     <label data-lang="lbl_asset_name" data-lang-title="tip_asset_name">Nome do Ativo</label>
                     <input type="text" id="asset_name" required>
                 </div>
-
                 <div style="display:flex; gap:15px; margin-bottom: 15px;">
                     <div class="form-group" style="flex:1;">
                         <label data-lang="lbl_asset_price" data-lang-title="tip_asset_price">Preço de Compra ($)</label>
                         <input type="number" id="asset_price" min="0" step="0.01" required>
                     </div>
                 </div>
-                
                 <div class="form-group">
                     <label data-lang="lbl_asset_image_url" data-lang-title="tip_asset_image_url">URL da Imagem / Caminho</label>
                     <input type="text" id="asset_image_url" data-lang-placeholder="ph_asset_image_url">
@@ -356,7 +374,6 @@
                         <span class="modal-image-text">Prévia da Imagem</span>
                     </div>
                 </div>
-
                 <div class="section-box" style="border-left: 4px solid var(--cor-erro);">
                     <div style="display:flex; gap:15px;">
                         <div class="form-group" style="flex:1;">
@@ -372,12 +389,10 @@
                         <span data-lang="lbl_asset_upkeep_total">Custo Diário</span>: <strong id="asset_upkeep_total_display" style="color:var(--cor-erro);">$ 0.00</strong>
                     </div>
                 </div>
-
                 <div class="section-box" style="margin-top:15px; border-left: 4px solid var(--cor-destaque);">
                     <label data-lang="lbl_grind_estimation" data-lang-title="tip_grind_calc">Tempo de Farm Estimado</label>
                     <div id="assetGrindPreview" style="margin-top:10px;"></div>
                 </div>
-
                 <div style="display:flex; justify-content: flex-end; gap: 10px; margin-top:20px;">
                     <button type="button" class="btn btn-secondary" onclick="closeAssetModal()" data-lang="btn_cancel">Cancelar</button>
                     <button type="submit" class="btn btn-primary" data-lang="btn_save">Salvar</button>

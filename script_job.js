@@ -15,14 +15,12 @@ function renderJobKanban() {
         const header = document.createElement('div');
         header.className = 'kanban-header';
         
-        // Editable Title
         const titleInput = document.createElement('input');
         titleInput.type = 'text';
         titleInput.className = 'kanban-title-input';
         titleInput.value = tier.name;
         titleInput.onchange = (e) => updateTierName(idx, e.target.value);
         
-        // Controls
         const controls = document.createElement('div');
         controls.innerHTML = `
             <button class="btn btn-plus btn-small" onclick="openJobModal('create', '${tier.id}')" style="width:25px; height:25px; font-size:16px;">+</button>
@@ -39,7 +37,6 @@ function renderJobKanban() {
         body.ondragover = (e) => allowDrop(e);
         body.ondragleave = (e) => leaveDrop(e);
 
-        // Render Jobs in this Tier
         const tierJobs = jobs.filter(j => j.tierId === tier.id);
         tierJobs.forEach(job => {
             const card = createJobCard(job);
@@ -59,7 +56,6 @@ function createJobCard(job) {
     card.ondragstart = (e) => dragStart(e, job.id);
     card.onclick = (e) => { if(!e.target.closest('button')) openJobModal('edit', null, job.id); };
 
-    // Calculate Gain
     const calc = getJobCalculation(job);
 
     card.innerHTML = `
@@ -85,7 +81,6 @@ function createJobCard(job) {
 }
 
 function getJobCalculation(job) {
-    // 1. Gross Gains (Ganhos Brutos)
     let grossNpc = parseFloat(job.money) || 0;
     let grossP2p = parseFloat(job.money) || 0;
 
@@ -93,17 +88,10 @@ function getJobCalculation(job) {
         job.items.forEach(jItem => {
             const itemObj = items.find(i => i.id === jItem.id);
             if (itemObj) {
-                // Must ensure we have access to calculation logic. 
-                // calculatePrices is global or from script_item.js. 
-                // If script_item is not loaded yet (unlikely), fallback.
                 let prices = { base:0, npcBuy:0, p2p:0 };
-                if(typeof calculatePrices === 'function') {
-                    prices = calculatePrices(itemObj);
-                }
+                if(typeof calculatePrices === 'function') prices = calculatePrices(itemObj);
                 
-                // NPC Gain = NPC Buy Price (Sink). If 0, fallback to Base.
                 let valNpc = prices.npcBuy > 0 ? prices.npcBuy : prices.base;
-                // P2P Gain = P2P Price. If 0, fallback to Base.
                 let valP2p = prices.p2p > 0 ? prices.p2p : prices.base;
 
                 grossNpc += valNpc * jItem.qty;
@@ -112,7 +100,6 @@ function getJobCalculation(job) {
         });
     }
 
-    // 2. Costs (Custos das Ferramentas)
     let costNpc = 0;
     let costP2p = 0;
 
@@ -135,7 +122,6 @@ function getJobCalculation(job) {
         });
     }
 
-    // 3. Net Totals (Líquido)
     const netNpc = grossNpc - costNpc;
     const netP2p = grossP2p - costP2p;
     
@@ -176,7 +162,6 @@ function dropJob(e, tierId) {
         job.tierId = tierId;
         saveLocalData();
         renderJobKanban();
-        // Force update items table as averages changed
         if(typeof renderTable === 'function') renderTable();
     }
 }
@@ -221,30 +206,31 @@ function closeJobModal() {
     if(el) el.style.display = 'none';
 }
 
-// Add Earnings Row
+// Add Earnings Row (Uses CSS Grid class now)
 function addJobItemRow(id='', qty=1) {
     const container = document.getElementById('jobItemsContainer');
     const div = document.createElement('div');
-    div.className = 'job-item-row';
-    // Access global render helper
+    div.className = 'job-item-row job-row-grid-items'; // ADDED GRID CLASS
+    
     let itemSelectHtml = '';
     if(typeof renderItemSearchDropdown === 'function') {
         itemSelectHtml = renderItemSearchDropdown(id, 'job-item-id', 'calculateJobGains()');
     }
     
     div.innerHTML = `
-        <div style="flex:2">${itemSelectHtml}</div>
-        <input type="number" class="job-item-qty" value="${qty}" min="1" placeholder="${t('ph_qty')}" style="flex:0.5" onchange="calculateJobGains()">
+        <div style="width:100%">${itemSelectHtml}</div>
+        <input type="number" class="job-item-qty" value="${qty}" min="1" placeholder="${t('ph_qty')}" onchange="calculateJobGains()">
         <button type="button" class="btn btn-small" style="background:var(--cor-erro-borda); border-color:var(--cor-erro); color:#fff;" onclick="this.parentElement.remove(); calculateJobGains()">X</button>
     `;
     container.appendChild(div);
 }
 
-// Add Expenses Row
+// Add Expenses Row (Uses CSS Grid class now)
 function addJobToolRow(id='', qty=1, deg=10, consumed=false) {
     const container = document.getElementById('jobToolsContainer');
     const div = document.createElement('div');
-    div.className = 'job-tool-row';
+    div.className = 'job-tool-row job-row-grid-tools'; // ADDED GRID CLASS
+    
     let itemSelectHtml = '';
     if(typeof renderItemSearchDropdown === 'function') {
         itemSelectHtml = renderItemSearchDropdown(id, 'job-tool-id', 'calculateJobGains()');
@@ -254,9 +240,9 @@ function addJobToolRow(id='', qty=1, deg=10, consumed=false) {
     const degDisabled = consumed ? 'disabled' : '';
     
     div.innerHTML = `
-        <div style="flex:2">${itemSelectHtml}</div>
-        <input type="number" class="job-tool-qty" value="${qty}" min="1" placeholder="${t('ph_qty')}" style="flex:0.6" onchange="calculateJobGains()">
-        <input type="number" class="job-tool-deg job-tool-deg-input" value="${deg}" min="0" max="100" placeholder="%" style="flex:0.6" onchange="calculateJobGains()" ${degDisabled}>
+        <div style="width:100%">${itemSelectHtml}</div>
+        <input type="number" class="job-tool-qty" value="${qty}" min="1" placeholder="${t('ph_qty')}" onchange="calculateJobGains()">
+        <input type="number" class="job-tool-deg job-tool-deg-input" value="${deg}" min="0" max="100" placeholder="%" onchange="calculateJobGains()" ${degDisabled}>
         <div class="job-tool-options">
             <label data-tooltip="${t('tip_consumed')}">
                 <input type="checkbox" class="job-tool-consumed consumed-check" ${isConsumedCheck} onchange="toggleDegInput(this); calculateJobGains()">
@@ -360,18 +346,15 @@ if(jobForm) {
         saveLocalData();
         closeJobModal();
         renderJobKanban();
-        // Force Item Table Update
         if(typeof renderTable === 'function') renderTable();
     });
 }
 
-// --- TIER MANAGEMENT ---
 function addTier() {
     openInputModal('title_new_tier', 'lbl_tier_name', (val) => {
         jobTiers.push({ id: 'tier_' + Date.now(), name: val });
         saveLocalData();
         renderJobKanban();
-        // Force Item Table Update (in case items rely on tier presence)
         if(typeof renderTable === 'function') renderTable();
     });
 }
@@ -379,6 +362,5 @@ function addTier() {
 function updateTierName(index, newName) {
     jobTiers[index].name = newName;
     saveLocalData();
-    // Force Item Table Update
     if(typeof renderTable === 'function') renderTable();
 }

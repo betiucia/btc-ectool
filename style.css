@@ -596,37 +596,68 @@ tr.item-row:hover { background-color: var(--cor-fundo-hover-leve); cursor: point
 
 /* --- JOB TOOLS STYLES --- */
 
-.job-tool-row {
-    display: grid;
-    grid-template-columns: 2fr 0.6fr 0.6fr 0.6fr 30px;
-    gap: 8px;
-    margin-bottom: 8px;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 5px;
+.job-items-table-container {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--cor-borda-muito-fraca);
+    padding: 10px;
     border-radius: 2px;
+    min-height: 40px;
+}
+
+/* Definição das colunas para Ganhos (Item + Qtd + Botão) */
+.job-row-grid-items {
+    display: grid;
+    grid-template-columns: 1fr 80px 35px; /* Nome, Qtd, Botão */
+    gap: 10px;
+    align-items: center;
+}
+
+/* Definição das colunas para Custos (Item + Qtd + Deg + Consumido + Botão) */
+.job-row-grid-tools {
+    display: grid;
+    grid-template-columns: 1.5fr 70px 70px 90px 35px; /* Nome, Qtd, Deg, Check, Botão */
+    gap: 10px;
+    align-items: center;
+}
+
+/* Headers dentro do Modal */
+.job-table-header {
+    font-size: 0.75em;
+    color: var(--cor-texto-secundario);
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 5px;
+    padding: 0 10px; /* Alinha com o padding do container */
+}
+
+/* Linhas geradas pelo JS */
+.job-item-row, .job-tool-row {
+    margin-bottom: 8px;
+    padding: 5px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 2px;
+}
+
+/* Ajustes nos inputs dentro das linhas */
+.job-item-row input, .job-tool-row input {
+    padding: 5px;
+    font-size: 0.9em;
 }
 
 .job-tool-options {
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-size: 0.8em;
 }
 
 .job-tool-options label {
     margin: 0;
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: 0.8em;
     display: flex;
     align-items: center;
     gap: 4px;
     color: var(--cor-texto-secundario);
-}
-
-.job-tool-deg-input {
-    width: 100%;
 }
 
 .job-tool-deg-input:disabled {
