@@ -218,7 +218,7 @@ function createAssetRow(asset) {
             $ ${parseFloat(asset.price).toLocaleString()}
         </td>
         <td class="col-upkeep">
-            $ ${dailyUpkeep.toFixed(2)} / dia
+            $ ${dailyUpkeep.toFixed(2)}
             <br><small style="color:var(--cor-texto-secundario);">($${upkeepVal} / ${upkeepInterval}d)</small>
         </td>
         <td>
