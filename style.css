@@ -562,28 +562,7 @@ tr.item-row:hover { background-color: var(--cor-fundo-hover-leve); cursor: point
     align-items: center;
 }
 
-.job-calc-summary {
-    background: #000;
-    padding: 15px;
-    border: 1px solid var(--cor-borda-media);
-    margin-top: 20px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-}
-
-.job-calc-field label {
-    font-size: 0.8em;
-    color: var(--cor-texto-secundario);
-    text-transform: uppercase;
-}
-
-.job-calc-field span {
-    font-size: 1.3em;
-    font-weight: bold;
-    color: var(--cor-sucesso);
-    font-family: var(--fonte-principal);
-}
+/* --- JOB TOOLS STYLES --- */
 
 .job-tool-row {
     display: grid;
@@ -631,7 +610,29 @@ tr.item-row:hover { background-color: var(--cor-fundo-hover-leve); cursor: point
     font-weight: bold;
 }
 
-/* Ajuste no resumo do modal para mostrar Bruto vs Liquido */
+.job-calc-summary {
+    background: #000;
+    padding: 15px;
+    border: 1px solid var(--cor-borda-media);
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.job-calc-field label {
+    font-size: 0.8em;
+    color: var(--cor-texto-secundario);
+    text-transform: uppercase;
+}
+
+.job-calc-field span {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: var(--cor-sucesso);
+    font-family: var(--fonte-principal);
+}
+
 .job-calc-summary-detailed {
     background: #000;
     padding: 10px;
@@ -658,3 +659,222 @@ tr.item-row:hover { background-color: var(--cor-fundo-hover-leve); cursor: point
 
 .val-cost { color: var(--cor-erro); }
 .val-gross { color: var(--cor-texto-secundario); }
+
+/* --- ASSETS SYSTEM (ATIVOS) --- */
+
+.assets-board {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding-bottom: 30px;
+}
+
+.asset-category-container {
+    background: var(--cor-fundo-painel-secundario);
+    border: 1px solid var(--cor-borda-fraca);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.asset-category-header {
+    background-color: rgba(0,0,0,0.3);
+    padding: 10px 15px;
+    border-bottom: 2px solid var(--cor-borda-media);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.asset-category-title {
+    font-family: var(--fonte-destaque);
+    color: var(--cor-texto-principal);
+    font-size: 1.1em;
+    text-transform: uppercase;
+}
+
+.asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+    padding: 15px;
+}
+
+.asset-card {
+    background-color: var(--cor-fundo-item-fila);
+    border: 1px solid var(--cor-borda-fraca);
+    border-radius: 2px;
+    padding: 15px;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    cursor: pointer;
+    position: relative;
+    border-top: 3px solid transparent;
+}
+
+.asset-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    border-color: var(--cor-destaque);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.asset-card[data-type="cat_properties"] { border-top-color: #8d6e63; } 
+.asset-card[data-type="cat_animals"] { border-top-color: #ffcc80; }    
+.asset-card[data-type="cat_vehicles"] { border-top-color: #90caf9; }   
+
+.asset-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed var(--cor-borda-muito-fraca);
+    padding-bottom: 5px;
+}
+
+.asset-name {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: var(--cor-destaque);
+}
+
+.asset-price-tag {
+    background: #000;
+    color: var(--cor-sucesso);
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 0.9em;
+    border: 1px solid var(--cor-borda-muito-fraca);
+    white-space: nowrap;
+}
+
+.asset-upkeep {
+    font-size: 0.8em;
+    color: var(--cor-erro);
+    margin-bottom: 10px;
+}
+
+.asset-grind-info {
+    margin-top: 10px;
+    font-size: 0.85em;
+    background: rgba(0,0,0,0.3);
+    padding: 8px;
+    border-radius: 2px;
+}
+
+.grind-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+    align-items: center;
+}
+
+.grind-tier-name {
+    color: var(--cor-texto-secundario);
+}
+
+.grind-time {
+    color: var(--cor-texto-principal);
+    font-weight: bold;
+}
+
+.grind-time.long { color: #ff8a8a; } 
+.grind-time.medium { color: #fff; }
+.grind-time.short { color: #8aff9e; } 
+
+/* IMPROVED DELETE BUTTON STYLE */
+.btn-delete-card {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: var(--cor-erro); /* Red box */
+    color: white; /* White X */
+    border: 1px solid var(--cor-erro-borda);
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: none; /* Keep hidden by default */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    font-weight: bold;
+    line-height: 1;
+    font-family: sans-serif;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.asset-card:hover .btn-delete-card {
+    display: flex; /* Changed from block to flex for centering */
+}
+
+.btn-delete-card:hover {
+    background-color: #c62828; /* Darker red */
+    transform: scale(1.1);
+}
+
+/* --- ASSET IMAGE --- */
+.asset-image-container {
+    width: 100%;
+    height: 140px;
+    background-color: #000;
+    margin-bottom: 10px;
+    border-radius: 2px;
+    border: 1px solid var(--cor-borda-muito-fraca);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.asset-image-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none; 
+}
+
+.asset-image-fallback {
+    color: var(--cor-texto-desabilitado);
+    font-size: 3em;
+    font-family: var(--fonte-destaque);
+    text-transform: uppercase;
+}
+
+.asset-card.drag-over-img {
+    border-color: var(--cor-destaque);
+    background-color: rgba(193, 164, 123, 0.1);
+}
+
+.asset-card.drag-over-img .asset-image-container::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    border: 2px dashed var(--cor-destaque);
+}
+
+/* Modal Image Preview */
+.modal-image-preview {
+    width: 100%;
+    height: 120px;
+    background: #000;
+    border: 1px solid var(--cor-borda-media);
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.modal-image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.modal-image-text {
+    color: var(--cor-texto-desabilitado);
+    font-size: 0.9em;
+    font-style: italic;
+}

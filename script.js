@@ -8,7 +8,7 @@ let categories = [];
 let craftingTables = [];
 let items = [];
 
-// --- GLOBAL JOBS DATA (Shared) ---
+// --- GLOBAL JOBS DATA ---
 let jobTiers = [
     { id: 'tier_early', name: 'Early Game' },
     { id: 'tier_mid', name: 'Mid Game' },
@@ -16,10 +16,18 @@ let jobTiers = [
 ];
 let jobs = []; 
 
+// --- GLOBAL ASSETS DATA ---
+let assetCategories = [
+    { id: 'cat_properties', nameKey: 'cat_properties' },
+    { id: 'cat_vehicles', nameKey: 'cat_vehicles' },
+    { id: 'cat_animals', nameKey: 'cat_animals' }
+];
+let assets = [];
+
 let currentSort = { column: 'name', direction: 'asc' };
 
 // Global DOM Elements
-let modal, deleteModal, importModal, inputModal, jobModal;
+let modal, deleteModal, importModal, inputModal, jobModal, assetModal;
 let itemToDeleteIndex = -1;
 let deleteTargetType = null;
 let inputModalCallback = null;
@@ -60,12 +68,12 @@ function setLanguage(lang) {
 
     saveLocalData(); 
     renderTable(); 
-    
     renderCategories();
     renderCraftingTables();
     
-    // Call function from script_job.js if it exists
+    // Call modules if they exist
     if(typeof renderJobKanban === 'function') renderJobKanban();
+    if(typeof renderAssetBoard === 'function') renderAssetBoard();
 }
 
 function updateFrameworkTexts() {
@@ -81,10 +89,19 @@ function updateFrameworkTexts() {
 
 function normalizeText(text) { return text ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : ""; }
 
-function showToast(message) {
+function showToast(message, isError = false) {
     let toast = document.getElementById("toast");
     if (!toast) { toast = document.createElement("div"); toast.id = "toast"; toast.className = "toast"; document.body.appendChild(toast); }
-    toast.innerText = message; toast.classList.add("show"); setTimeout(function(){ toast.classList.remove("show"); }, 3000);
+    toast.innerText = message; 
+    if(isError) toast.style.backgroundColor = "var(--cor-erro)";
+    else toast.style.backgroundColor = "var(--cor-destaque)";
+    
+    toast.classList.add("show"); 
+    setTimeout(function(){ 
+        toast.classList.remove("show"); 
+        // Reset color after hide
+        setTimeout(() => toast.style.backgroundColor = "", 300);
+    }, 3000);
 }
 
 function getTablesCheckboxesHTML(selectedTables = []) {
@@ -175,7 +192,7 @@ function selectItem(div, id, name, onChangeFuncStr) {
             } else if (onChangeFuncStr.includes('previewPrices')) {
                 previewPrices();
             }
-        } catch(e) { console.log("Executando onChange genérico error"); }
+        } catch(e) { console.log("Executando onChange genérico"); }
     }
     div.parentElement.style.display = 'none';
 }
@@ -211,7 +228,7 @@ function addRecipeCard(data = null) {
     const rName = data ? data.name : t('variant_new');
     const rTime = data ? data.time : 5;
     const rLevel = data ? data.level : 0;
-    const rAmount = data ? (data.amount || 1) : 1;
+    const rAmount = data ? (data.amount || 1) : 1; 
     const rQueue = data ? data.queue : false;
     const rTables = data ? data.tables : [];
 
@@ -517,8 +534,10 @@ function openTab(tabName, btnElement) {
     else if(tabName === 'items' && buttons[0]) buttons[0].classList.add("active");
 
     if(tabName === 'jobs' && typeof renderJobKanban === 'function') renderJobKanban();
+    if(tabName === 'assets' && typeof renderAssetBoard === 'function') renderAssetBoard();
 }
 
+// SAVE & LOAD MODIFIED TO INCLUDE ASSETS AND TRY CATCH
 function saveLocalData() {
     const data = {
         items: items,
@@ -528,9 +547,22 @@ function saveLocalData() {
         apiKey: apiKey,
         currentLang: currentLang,
         jobTiers: jobTiers,
-        jobs: jobs
+        jobs: jobs,
+        assetCategories: assetCategories,
+        assets: assets
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+        if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+            showToast("⚠️ Storage Limit Reached! Cannot save more images.", true);
+            console.error("LocalStorage Limit Reached", e);
+        } else {
+            showToast("Error saving data.", true);
+            console.error("Save Error", e);
+        }
+    }
 }
 
 function loadLocalData() {
@@ -545,11 +577,13 @@ function loadLocalData() {
             if(data.apiKey) apiKey = data.apiKey;
             if(data.currentLang) currentLang = data.currentLang; 
             
-            // LOAD JOBS DATA
             if(data.jobTiers) jobTiers = data.jobTiers;
             if(data.jobs) jobs = data.jobs;
 
-            // Update UI inputs
+            if(data.assetCategories) assetCategories = data.assetCategories;
+            if(data.assets) assets = data.assets;
+
+            // UI
             if(document.getElementById('globalSellMult')) document.getElementById('globalSellMult').value = globalConfig.sellMult;
             if(document.getElementById('globalBuyMult')) document.getElementById('globalBuyMult').value = globalConfig.buyMult;
             if(document.getElementById('globalP2PMargin')) document.getElementById('globalP2PMargin').value = globalConfig.p2pMargin;
@@ -582,14 +616,20 @@ function uploadJSON(input) {
         try {
             const data = JSON.parse(e.target.result);
             if(data.items && data.categories) {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                loadLocalData();
-                renderCategories();
-                renderCraftingTables();
-                renderTable();
-                updateFrameworkTexts();
-                if(typeof renderJobKanban === 'function') renderJobKanban();
-                showToast(t('toast_restore_success'));
+                // Try save to check quota before confirming
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    loadLocalData();
+                    renderCategories();
+                    renderCraftingTables();
+                    renderTable();
+                    updateFrameworkTexts();
+                    if(typeof renderJobKanban === 'function') renderJobKanban();
+                    if(typeof renderAssetBoard === 'function') renderAssetBoard();
+                    showToast(t('toast_restore_success'));
+                } catch(e) {
+                    showToast("Backup too large for this browser storage.", true);
+                }
             } else {
                 showToast(t('err_invalid_file'));
             }
@@ -857,11 +897,14 @@ function closeModal() { modal.style.display = "none"; }
 function openDeleteModal(type, index) { 
     itemToDeleteIndex = index; deleteTargetType = type;
     let name = ""; let msg = "";
+    
     if(type === 'item') { name = items[index].name; msg = t('delete_msg_item'); } 
     else if(type === 'category') { name = categories[index].name; msg = t('delete_msg_cat'); } 
     else if(type === 'table') { name = craftingTables[index].name; msg = t('delete_msg_table'); }
     else if(type === 'tier') { name = jobTiers[index].name; msg = t('delete_msg_tier'); }
-    else if(type === 'job') { const job = jobs.find(j => j.id === index); name = job ? job.name : ''; msg = t('delete_msg_job'); } // Index passed for job is ID
+    else if(type === 'job') { const job = jobs.find(j => j.id === index); name = job ? job.name : ''; msg = t('delete_msg_job'); } 
+    else if(type === 'asset') { const asset = assets.find(a => a.id === index); name = asset ? asset.name : ''; msg = t('delete_msg_asset'); }
+    else if(type === 'asset_cat') { const cat = assetCategories[index]; name = t(cat.nameKey) !== cat.nameKey ? t(cat.nameKey) : cat.name; msg = t('delete_msg_asset_cat'); }
 
     document.getElementById('deleteItemName').innerText = name; document.getElementById('deleteMsg').innerText = msg; deleteModal.style.display = "block"; 
 }
@@ -869,7 +912,7 @@ function openDeleteModal(type, index) {
 function closeDeleteModal() { deleteModal.style.display = "none"; itemToDeleteIndex = -1; deleteTargetType = null; }
 
 function confirmDelete() { 
-    if (itemToDeleteIndex !== -1) { 
+    if (itemToDeleteIndex !== -1 || (deleteTargetType === 'asset' && itemToDeleteIndex) || (deleteTargetType === 'job' && itemToDeleteIndex)) { 
         if (deleteTargetType === 'item') { items.splice(itemToDeleteIndex, 1); renderTable(); } 
         else if (deleteTargetType === 'category') { categories.splice(itemToDeleteIndex, 1); renderCategories(); } 
         else if (deleteTargetType === 'table') { craftingTables.splice(itemToDeleteIndex, 1); renderCraftingTables(); }
@@ -882,6 +925,18 @@ function confirmDelete() {
         else if (deleteTargetType === 'job') {
             jobs = jobs.filter(j => j.id !== itemToDeleteIndex); 
             if(typeof renderJobKanban === 'function') renderJobKanban();
+        }
+        else if (deleteTargetType === 'asset') {
+            assets = assets.filter(a => a.id !== itemToDeleteIndex);
+            if(typeof renderAssetBoard === 'function') renderAssetBoard();
+        }
+        else if (deleteTargetType === 'asset_cat') {
+            const cat = assetCategories[itemToDeleteIndex];
+            if(cat) {
+                assets = assets.filter(a => a.categoryId !== cat.id);
+                assetCategories.splice(itemToDeleteIndex, 1);
+                if(typeof renderAssetBoard === 'function') renderAssetBoard();
+            }
         }
         saveLocalData();
     } 
@@ -916,7 +971,7 @@ document.getElementById('itemForm').addEventListener('submit', (e) => {
     const itemData = { id: itemId, name: document.getElementById('modal_itemName').value, cat: catId, description: document.getElementById('modal_description').value, imageOverride: document.getElementById('modal_imageOverride').value, isCrafted: isCrafted, cost: parseFloat(document.getElementById('modal_costPrice').value) || 0, recipes: recipes, frameworkData: frameworkData };
     if (index === -1) items.push(itemData); else items[index] = itemData;
     saveLocalData(); closeModal(); renderTable(); 
-    if(typeof calculateJobGains === 'function') calculateJobGains(); // Re-calc jobs
+    if(typeof calculateJobGains === 'function') calculateJobGains();
 });
 
 // --- 8. INITIALIZATION ---
@@ -925,7 +980,8 @@ window.onload = function() {
     deleteModal = document.getElementById("deleteModal");
     importModal = document.getElementById("importModal");
     inputModal = document.getElementById("inputModal");
-    jobModal = document.getElementById("jobModal"); // Init Job Modal
+    jobModal = document.getElementById("jobModal"); 
+    assetModal = document.getElementById("assetModal");
     
     loadLocalData(); 
     
@@ -933,8 +989,9 @@ window.onload = function() {
     renderCraftingTables();
     renderTable();
     
-    // Attempt to init Kanban if loaded
+    // Init Modules
     if(typeof renderJobKanban === 'function') renderJobKanban();
+    if(typeof renderAssetBoard === 'function') renderAssetBoard();
     
     setLanguage(currentLang); 
     apiKey = localStorage.getItem('redm_economy_apikey') || "";
@@ -943,11 +1000,11 @@ window.onload = function() {
 
 function clearAllItems() {
     if (confirm(t('confirm_clear_all'))) {
-        items = [];
-        jobs = [];
+        items = []; jobs = []; assets = [];
         saveLocalData();
         renderTable();
         if(typeof renderJobKanban === 'function') renderJobKanban();
+        if(typeof renderAssetBoard === 'function') renderAssetBoard();
         showToast(t('toast_cleared'));
     }
 }
@@ -958,4 +1015,5 @@ window.onclick = function(event) {
     if (importModal && event.target == importModal) closeImportModal();
     if (inputModal && event.target == inputModal) closeInputModal();
     if (jobModal && event.target == jobModal && typeof closeJobModal === 'function') closeJobModal();
+    if (assetModal && event.target == assetModal && typeof closeAssetModal === 'function') closeAssetModal();
 }
