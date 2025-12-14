@@ -62,7 +62,6 @@ function createJobCard(job) {
     // Calculate Gain
     const calc = getJobCalculation(job);
 
-    // TRADUÇÃO APLICADA AQUI: t('lbl_job_cost')
     card.innerHTML = `
         <div class="job-card-header">
             <span class="job-name">${job.name}</span>
@@ -94,7 +93,14 @@ function getJobCalculation(job) {
         job.items.forEach(jItem => {
             const itemObj = items.find(i => i.id === jItem.id);
             if (itemObj) {
-                const prices = calculatePrices(itemObj);
+                // Must ensure we have access to calculation logic. 
+                // calculatePrices is global or from script_item.js. 
+                // If script_item is not loaded yet (unlikely), fallback.
+                let prices = { base:0, npcBuy:0, p2p:0 };
+                if(typeof calculatePrices === 'function') {
+                    prices = calculatePrices(itemObj);
+                }
+                
                 // NPC Gain = NPC Buy Price (Sink). If 0, fallback to Base.
                 let valNpc = prices.npcBuy > 0 ? prices.npcBuy : prices.base;
                 // P2P Gain = P2P Price. If 0, fallback to Base.
@@ -114,16 +120,12 @@ function getJobCalculation(job) {
         job.tools.forEach(tool => {
             const toolItem = items.find(i => i.id === tool.id);
             if (toolItem) {
-                const prices = calculatePrices(toolItem);
+                let prices = { base:0, npcSell:0, p2p:0 };
+                if(typeof calculatePrices === 'function') prices = calculatePrices(toolItem);
                 
-                // --- DEFINIÇÃO DE PREÇO DA FERRAMENTA ---
-                // Custo NPC = Preço de Venda do NPC (Loja) -> Quanto custa comprar a ferramenta
                 let priceNpc = prices.npcSell > 0 ? prices.npcSell : prices.base;
-                
-                // Custo P2P = Preço de Mercado -> Quanto custa comprar de outro player
                 let priceP2p = prices.p2p > 0 ? prices.p2p : prices.base;
 
-                // --- FATOR DE USO ---
                 const factor = tool.consumed ? 1 : (tool.deg / 100);
                 const qty = tool.qty || 1;
 
@@ -174,6 +176,8 @@ function dropJob(e, tierId) {
         job.tierId = tierId;
         saveLocalData();
         renderJobKanban();
+        // Force update items table as averages changed
+        if(typeof renderTable === 'function') renderTable();
     }
 }
 
@@ -222,7 +226,11 @@ function addJobItemRow(id='', qty=1) {
     const container = document.getElementById('jobItemsContainer');
     const div = document.createElement('div');
     div.className = 'job-item-row';
-    const itemSelectHtml = renderItemSearchDropdown(id, 'job-item-id', 'calculateJobGains()');
+    // Access global render helper
+    let itemSelectHtml = '';
+    if(typeof renderItemSearchDropdown === 'function') {
+        itemSelectHtml = renderItemSearchDropdown(id, 'job-item-id', 'calculateJobGains()');
+    }
     
     div.innerHTML = `
         <div style="flex:2">${itemSelectHtml}</div>
@@ -237,9 +245,11 @@ function addJobToolRow(id='', qty=1, deg=10, consumed=false) {
     const container = document.getElementById('jobToolsContainer');
     const div = document.createElement('div');
     div.className = 'job-tool-row';
-    const itemSelectHtml = renderItemSearchDropdown(id, 'job-tool-id', 'calculateJobGains()');
+    let itemSelectHtml = '';
+    if(typeof renderItemSearchDropdown === 'function') {
+        itemSelectHtml = renderItemSearchDropdown(id, 'job-tool-id', 'calculateJobGains()');
+    }
     
-    // Checkbox logic to toggle deg input
     const isConsumedCheck = consumed ? 'checked' : '';
     const degDisabled = consumed ? 'disabled' : '';
     
@@ -268,7 +278,6 @@ function toggleDegInput(checkbox) {
 }
 
 function calculateJobGains() {
-    // 1. Gather Data Virtually to reuse calculation logic
     const time = parseFloat(document.getElementById('job_time').value) || 60;
     const money = parseFloat(document.getElementById('job_money').value) || 0;
     
@@ -288,7 +297,6 @@ function calculateJobGains() {
         if(id) tempTools.push({id, qty, deg, consumed});
     });
 
-    // Reuse the main calculation function
     const dummyJob = {
         money: money,
         time: time,
@@ -298,7 +306,6 @@ function calculateJobGains() {
 
     const calc = getJobCalculation(dummyJob);
 
-    // 2. Update UI Summary
     document.getElementById('summary_gross').innerText = `$ ${calc.grossNpc.toFixed(2)}`;
     document.getElementById('summary_cost').innerText = `- $ ${calc.totalCostNpc.toFixed(2)}`;
     
@@ -353,6 +360,8 @@ if(jobForm) {
         saveLocalData();
         closeJobModal();
         renderJobKanban();
+        // Force Item Table Update
+        if(typeof renderTable === 'function') renderTable();
     });
 }
 
@@ -362,10 +371,14 @@ function addTier() {
         jobTiers.push({ id: 'tier_' + Date.now(), name: val });
         saveLocalData();
         renderJobKanban();
+        // Force Item Table Update (in case items rely on tier presence)
+        if(typeof renderTable === 'function') renderTable();
     });
 }
 
 function updateTierName(index, newName) {
     jobTiers[index].name = newName;
     saveLocalData();
+    // Force Item Table Update
+    if(typeof renderTable === 'function') renderTable();
 }
