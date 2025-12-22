@@ -708,7 +708,7 @@ function exportAllItemsDefinitions() {
 }
 
 function copyAllCraftsDefinitions() {
-    let fullLua = "Config.CraftingRecipes = {\n"; 
+    let fullLua = "Config.Recipes = {\n"; 
     let count = 0;
     
     items.forEach(item => {
