@@ -141,6 +141,7 @@ const translations = {
         toast_restore_success: "Dados restaurados com sucesso!", 
         err_invalid_file: "Arquivo inválido!", 
         err_read_file: "Erro ao ler arquivo!", 
+        err_backup_too_large: "Erro: O arquivo de backup é grande demais para o armazenamento do navegador.", 
         
         // --- FRAMEWORK ---
         lbl_framework: "Framework do Servidor", 
@@ -400,6 +401,7 @@ const translations = {
         toast_restore_success: "Data restored successfully!", 
         err_invalid_file: "Invalid file!", 
         err_read_file: "Error reading file!", 
+        err_backup_too_large: "Error: Backup file is too large for browser storage.", 
         
         // --- FRAMEWORK ---
         lbl_framework: "Server Framework", 
@@ -624,30 +626,55 @@ const translations = {
         btn_upload_json: "📂 Backup wiederherstellen", 
         backup_hint: "Daten werden automatisch im Browser gespeichert. Nutzen Sie Backup zur Sicherheit oder Übertragung.", 
         
+        
+        
         // --- TOOLTIPS ---
+        
         tooltip_copy_all: "Generiert Lua-Code für ALLE herstellbaren Gegenstände auf einmal.", 
+        
         tooltip_create_item: "Neuen Gegenstand erstellen", 
+        
         tooltip_import_items: "Gegenstände importieren", 
+        
         btn_generate_ai: "✨ Generieren", 
+        
         btn_suggest_recipe: "✨ KI-Rezept vorschlagen", 
+        
         btn_edit: "Bearbeiten", 
+        
         ph_qty: "Menge", 
+        
         ph_ret: "Rück", 
+        
         ph_deg: "Abn %", 
+        
         ph_table_name: "Werkbank Name", 
+        
         ph_global: "Global", 
+        
         lbl_language: "Sprache / Language", 
+        
         ph_auto: "Auto", 
+        
         opt_select: "Auswählen...", 
+        
         lbl_cost: "Kosten:", 
+        
         lbl_tool_col: "Werkzeug", 
+        
         lbl_deg_col: "Abnutzung", 
-        lbl_amount_craft: "Hergestellte Menge", 
+        
+        lbl_amount_craft: "Hergestellte Menge",
+        
+        err_backup_too_large: "Fehler: Sicherungsdatei ist zu groß für den Browser-Speicher.",
+        
+        
         
         // --- JOBS ---
+        
         tab_jobs: "Jobs", 
-        tier_early: "Early Game", 
-        tier_mid: "Mid Game", 
+        
+        tier_early: "Early Game",        tier_mid: "Mid Game", 
         tier_late: "Late Game", 
         btn_add_job: "+ Job", 
         btn_add_tier: "+ Tier", 
@@ -851,6 +878,7 @@ const translations = {
         lbl_tool_col: "Инструмент", 
         lbl_deg_col: "Износ", 
         lbl_amount_craft: "Количество при крафте", 
+        err_backup_too_large: "Ошибка: Файл бэкапа слишком велик для хранилища браузера.",
         
         // --- JOBS ---
         tab_jobs: "Работа", 

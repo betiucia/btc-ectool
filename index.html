@@ -93,10 +93,10 @@
                         <h3 data-lang="data_backup">Gerenciamento de Dados</h3>
                         <div style="display:flex; gap:10px; margin-bottom:5px;">
                             <button class="btn btn-secondary" onclick="downloadJSON()" style="flex:1;" data-lang="btn_download_json">💾 Baixar Backup (JSON)</button>
-                            <label class="btn btn-secondary" style="flex:1; text-align:center; cursor:pointer; margin-top:5px; border-color: var(--cor-info); color: var(--cor-info);" data-lang="btn_upload_json">
+                            <button class="btn btn-secondary" onclick="document.getElementById('uploadJsonInput').click()" style="flex:1; text-align:center; cursor:pointer; margin-top:5px; border-color: var(--cor-info); color: var(--cor-info);" data-lang="btn_upload_json">
                                 📂 Restaurar Backup
-                                <input type="file" id="uploadJsonInput" accept=".json" style="display:none;" onchange="uploadJSON(this)">
-                            </label>
+                            </button>
+                            <input type="file" id="uploadJsonInput" accept=".json" style="display:none;" onchange="uploadJSON(this)">
                         </div>
                         <div style="margin-top: 10px; display:flex;">
                             <button class="btn btn-secondary" onclick="clearAllItems()" style="flex:1; border-color: var(--cor-erro); color: var(--cor-erro);" data-lang="btn_clear_all">🗑️ Limpar Todos os Itens</button>

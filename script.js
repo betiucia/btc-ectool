@@ -294,32 +294,73 @@ function uploadJSON(input) {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            const data = JSON.parse(e.target.result);
-            if(data.items && data.categories) {
+            const dataText = e.target.result;
+            const data = JSON.parse(dataText);
+
+            // A more robust check for a valid backup file, only checks for globalConfig
+            if (data && data.globalConfig) {
                 try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                    loadLocalData();
-                    // Call render functions if modules are loaded
-                    if(typeof renderCategories === 'function') renderCategories();
-                    if(typeof renderCraftingTables === 'function') renderCraftingTables();
-                    if(typeof renderTable === 'function') renderTable();
+                    localStorage.setItem(STORAGE_KEY, dataText);
+                    
+                    // Reset ALL current state before loading
+                    items = [];
+                    categories = [];
+                    craftingTables = [];
+                    jobTiers = [];
+                    jobs = [];
+                    assetCategories = [];
+                    assets = [];
+                    
+                    // Load the new data
+                    loadLocalData(); 
+                    
+                    // After loading, if some arrays are empty, restore defaults
+                    if (jobTiers.length === 0) {
+                        jobTiers = [
+                            { id: 'tier_early', name: t('tier_early') },
+                            { id: 'tier_mid', name: t('tier_mid') },
+                            { id: 'tier_late', name: t('tier_late') }
+                        ];
+                    }
+                    if (assetCategories.length === 0) {
+                        assetCategories = [
+                            { id: 'cat_properties', nameKey: 'cat_properties' },
+                            { id: 'cat_vehicles', nameKey: 'cat_vehicles' },
+                            { id: 'cat_animals', nameKey: 'cat_animals' }
+                        ];
+                    }
+
+                    // Re-render everything
+                    if (typeof renderCategories === 'function') renderCategories();
+                    if (typeof renderCraftingTables === 'function') renderCraftingTables();
+                    if (typeof renderTable === 'function') renderTable();
+                    if (typeof renderJobKanban === 'function') renderJobKanban();
+                    if (typeof renderAssetBoard === 'function') renderAssetBoard();
+                    
+                    // Update UI elements that depend on loaded data
                     updateFrameworkTexts();
-                    if(typeof renderJobKanban === 'function') renderJobKanban();
-                    if(typeof renderAssetBoard === 'function') renderAssetBoard();
+                    setLanguage(currentLang); // Also re-applies translations
+                    
                     showToast(t('toast_restore_success'));
-                } catch(e) {
-                    showToast("Backup too large.", true);
+                    openTab('items'); // Go back to the main tab
+
+                } catch (storageError) {
+                    console.error("Storage Error:", storageError);
+                    showToast(t('err_backup_too_large'), true);
                 }
             } else {
-                showToast(t('err_invalid_file'));
+                showToast(t('err_invalid_file'), true);
             }
         } catch(err) {
             console.error(err);
-            showToast(t('err_read_file'));
+            showToast(t('err_read_file'), true);
         }
     };
+    reader.onerror = function() {
+        showToast(t('err_read_file'), true);
+    };
     reader.readAsText(file);
-    input.value = ''; 
+    input.value = ''; // Reset input for future uploads
 }
 
 // --- SHARED HELPER FOR CLIPBOARD ---
