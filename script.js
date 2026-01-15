@@ -492,7 +492,7 @@ window.onload = function() {
 };
 
 window.onclick = function(event) { 
-    if (modal && event.target == modal && typeof closeModal === 'function') closeModal(); 
+    // if (modal && event.target == modal && typeof closeModal === 'function') closeModal(); 
     if (deleteModal && event.target == deleteModal) closeDeleteModal();
     if (importModal && event.target == importModal && typeof closeImportModal === 'function') closeImportModal();
     if (inputModal && event.target == inputModal) closeInputModal();
